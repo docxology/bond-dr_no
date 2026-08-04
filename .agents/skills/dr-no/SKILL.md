@@ -1,53 +1,66 @@
 ---
 name: dr-no
-description: Code-centric optimization research exemplar — gradient descent, convergence analysis, automated figures, dashboard, and publication-quality PDF.
-version: 0.1.0
+description: PROJECT BOND film package — Dr. No (1962), codename CRAB KEY. Deterministic radiation/isotope forensics; drive mission, gates, figures.
+version: 0.2.0
 author: docxology
 license: MIT
-tags: [exemplar, code, optimization, thin-orchestrator]
+tags: [bond, film, radiation-forensics, isotope-identification, plume-dispersion, thin-orchestrator]
 ---
 
-# dr-no
+# dr-no — CRAB KEY
 
-Project-scoped skill for the in-repo exemplar at
-`projects/working/bond/dr_no/`. Load this when working inside the project.
+Project-scoped skill for the PROJECT BOND film package at
+`projects/working/bond/dr_no/` (film "Dr. No", 1962, mission codename
+CRAB KEY). Load this when working inside the package.
 
 ## When to Use
 
-- Working inside the `dr_no` exemplar — running scripts, editing source,
-  or regenerating outputs.
-- Forking this exemplar as the starting scaffold for a new research project.
-- Validating that the exemplar's contracts (thin-orchestrator, layer boundaries,
-  no-mocks testing) still hold after changes.
+- Running the mission (`brief` / `recon` / `plan` / `execute` / `debrief` /
+  `full` / `render`), editing `src/`, regenerating figures, or hydrating the
+  manuscript.
+- Implementing or verifying the BOND-API `MissionProvider` adapter and register
+  integration.
+- Validating the guardrails (thin-orchestrator, no-mocks, ≥90% coverage,
+  determinism, zero lineage, local-only).
 
-## Quick Reference
+## Quick Reference (from the package root)
 
 ```bash
-# From the repository root
-uv run pytest projects/working/bond/dr_no/tests --cov=projects/working/bond/dr_no/src --cov-fail-under=90
-uv run python scripts/pipeline/stage_02_analysis.py --project templates/dr_no
-uv run python scripts/pipeline/stage_03_render.py --project templates/dr_no
-uv run python scripts/pipeline/stage_04_validate.py --project templates/dr_no
-uv run python scripts/pipeline/stage_05_copy.py --project templates/dr_no
+uv sync --extra dev
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run mypy src/ scripts/
+uv run python scripts/run_mission.py full        # five-stage mission
+uv run python scripts/run_mission.py render      # gamma spectrum + plume figures
+uv run python scripts/z_generate_manuscript_variables.py   # hydrate {{TOKEN}}s
 ```
+
+## Domain core
+
+- `src/dr_no/isotope_profiles.py` — gamma-spectrum isotope identification
+  (real 10-isotope library, detector synthesis, peak detection, identification).
+- `src/dr_no/plume_model.py` — Gaussian plume dispersion (Pasquill–Gifford A–F).
+- `src/dr_no/island_assessment.py` — dose-rate, threat bands, containment,
+  island aggregation.
+- `src/dr_no/mission.py` — the ONLY module importing `bond_api`; exposes
+  `MissionProvider` (slug `dr_no`) and registers gadgets.
 
 ## Pitfalls
 
-- **Keep scripts thin.** Business logic belongs in `src/` or shared
-  `infrastructure/`, not in `scripts/`.
-- **No mocks.** All tests must use real data, real files, and real
-  computation.
-- **Outputs are disposable.** Never hand-edit `output/` — regenerate from
-  source and config.
-- **Keep tracked benchmarks deterministic.** Serialize reproducible inputs,
-  objective values, and checks; keep wall-clock timing as a runtime-only
-  diagnostic.
-- **Run from the repo root.** Commands assume the template monorepo root
-  as working directory unless the child `AGENTS.md` states otherwise.
+- `mission.py` is the protocol seam. Domain modules must stay importable
+  WITHOUT bond-api; never add `bond_api` imports to the pure core.
+- Pasquill–Gifford sigma coefficients are kilometre-based — `sigma_y`/`sigma_z`
+  convert to metres (`*1000`). Revert that and elevated releases produce ~0
+  ground concentration.
+- No mocks, no RNG, no wall-clock in artifacts; fixed seed 42.
+- Local-only: no remote, never push; path-scoped commits in this repo only.
+- `output/` is git-ignored (regenerable); z_generate + render keep it current.
+- Manuscript `{{TOKEN}}`s resolve from `src/dr_no/manuscript_variables.py`;
+  the cross-ref gate scans `manuscript/[0-9]*.md` only (not SYNTAX.md).
 
 ## Cross-refs
 
-- Project contract: [`AGENTS.md`](../../../AGENTS.md)
-- README: [`README.md`](../../../README.md)
-- TODO: [`TODO.md`](../../../TODO.md)
-- Exemplar roster: [`projects/AGENTS.md`](../../../../../AGENTS.md)
+- Project contract: [`AGENTS.md`](../../../AGENTS.md) · README:
+  [`README.md`](../../../README.md) · TODO: [`TODO.md`](../../../TODO.md)
+- BOND suite skill: `bond-suite-package-development`; frozen protocol:
+  `references/bond-api-phase1.md` there.

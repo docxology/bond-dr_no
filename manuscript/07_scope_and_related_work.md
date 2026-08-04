@@ -1,24 +1,32 @@
-# Scope, Related Work, and Positioning {#sec:scope}
+# Scope and Related Work
 
-This section situates the exemplar scientifically and states explicit boundaries. The goal is not to compete with monographs on nonlinear programming [@nocedal2006numerical; @bertsekas1999nonlinear], but to show how a minimal, test-backed optimization story fits the template's reproducibility and rendering stack [@peng2011reproducible].
+## 7.1 Scope
 
-## Classical gradient methods
+CRAB KEY addresses the *assessment* half of a radiological incident: identify
+the isotopes, model the airborne dispersion, and score the island. It is
+deliberately scoped to deterministic, first-principles modelling. It does *not*
+perform Bayesian spectrum unfolding, isotopic age dating, full detonation
+physics, or three-dimensional computational fluid dynamics — each of which is a
+substantial discipline of its own and outside a single film package. Where the
+real world calls for such machinery, the deterministic core here serves as a
+fast, auditable first pass.
 
-Smooth unconstrained minimization via first-order updates has a long lineage, from Cauchy's early descent perspective [@cauchy1847methode] to modern treatments of convex problems [@boyd2004convex] and accelerated gradient schemes [@nesterov2013gradient]. Polyak's classical discussion of gradient convergence factors remains relevant when interpreting empirical iteration counts [@polyak1964some]. The present manuscript restricts attention to **fixed-step** gradient descent on a **convex quadratic**, where rates reduce to scalar linear recurrences in the error ([@sec:results], [@eq:scalar_linear_update]).
+## 7.2 Related work
 
-## Adaptive and stochastic extensions
+Gamma-ray isotope identification with a known library is a standard
+spectroscopic procedure (peak search followed by energy-window matching), and
+the Gaussian plume model with Pasquill–Gifford dispersion parameters is the
+conventional regulatory Gaussian model for short-range atmospheric dispersion.
+The island threat score is unusual only in its packaging: it fuses a
+transport model with a dose-conversion step and a decision rule into one small,
+deterministic, protocol-exposed mission. The contribution of this package is
+not a new physical law but a *complete, reproducible, agent-runnable* chain
+from raw gamma measurements to a containment recommendation.
 
-Practical machine-learning optimizers (e.g., Adam [@kingma2014adam]) introduce momentum, adaptive preconditioning, or noise from minibatching. Those methods are **out of scope** for `dr_no`: the exemplar deliberately keeps the algorithm minimal so that failures (divergent $\alpha$, iteration caps) are interpretable without confounding from stochastic sampling or line-search logic.
+## 7.3 Limitations
 
-## What this project proves about the template
-
-The scientific claims through [@sec:introduction], [@sec:methodology], and [@sec:results] are standard textbook material. The **non-standard** contribution is procedural: configuration in `manuscript/config.yaml` drives `run_convergence_experiment()`, figures, CSV exports, and `RESULT_*` token substitution (`scripts/z_generate_manuscript_variables.py`) so that PDF, HTML, and validation logs refer to the same numbers. That pattern is what downstream projects should copy—whether the domain is optimization, differential equations, or Bayesian workflows.
-
-## Explicit limitations
-
-1. **Dimensionality**: Default experiments emphasize $d = 1$ with $A = I$ for transparent plotting; the benchmark figure explores $d > 1$ only with identity Hessians, so no ill-conditioning effects appear.
-2. **Step-size policy**: Only constant $\alpha$ is implemented in `src/optimizer.py`; there is no Wolfe or Armijo backtracking.
-3. **Global optimization**: Convexity is assumed; no basin-hopping or restarts are studied.
-4. **Numerical model**: Double-precision floating point only; no interval or arbitrary-precision analysis.
-
-These limitations are intentional: they narrow the failure surface so that infrastructure concerns—tests, logging, figure registration, and PDF cross-references—remain visible rather than buried under algorithmic complexity.
+Representative dose coefficients and dispersion coefficients are constants
+with real, cited-order-of-magnitude values; they are approximations and are
+kept out of the manuscript's token prose by construction. The results are
+therefore directionally correct and fully auditable rather than a substitute
+for a licensed consequence assessment.

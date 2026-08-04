@@ -1,10 +1,14 @@
-# References {#sec:references}
+# References
 
-Bibliography lives in [`manuscript/references.bib`](references.bib) and is read by Pandoc during PDF render. The build pipeline invokes Pandoc with `--natbib`, so every `[@key]` citation in the manuscript is rewritten to the appropriate `\cite{}`/`\citep{}`/`\citet{}` LaTeX command and resolved against the bib file.
+[Kennedy and others 2011] W. E. Kennedy, T. J. Strenge, and K. A. Pauley,
+*DCAL and the RADTRAN Family of Codes*, assessment of radionuclide dose and
+inventory (reference text for inhalation dose coefficients).
 
-To validate that `references.bib` is syntactically clean and contains the required fields per entry type:
+[Turner 1994] D. B. Turner, *Workbook of Atmospheric Dispersion Estimates*,
+Lewis Publishers, 2nd ed. (Pasquill–Gifford dispersion methodology).
 
-```bash
-uv run python -m infrastructure.reference.citation.cli validate \
-    projects/working/bond/dr_no/manuscript/references.bib --strict
-```
+[Martin & Green 1976] J. A. Martin and D. A. Green, "Dispersion and Dosimetry
+Models", EPA guidance on Gaussian plume parameterisation.
+
+[BOND suite] PROJECT BOND suite documentation and the frozen `bond-api`
+mission protocol, internal to this working tree.

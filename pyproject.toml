@@ -1,5 +1,6 @@
-# Code Project Configuration
-# Inherits workspace settings from root pyproject.toml
+# Dr. No (1962) — CRAB KEY mission software
+# BOND suite phase-2 film package: radiation / isotope forensics.
+# Local-only working tree; no remote, never push.
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -7,9 +8,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dr_no"
-version = "2.5.2"
+version = "0.1.0"
 license = {text = "MIT"}
-description = "Fully-tested codebase with numerical optimization and analysis"
+description = "CRAB KEY — gamma-spectrum isotope identification, plume dispersion, and island threat assessment"
 authors = [
     {name = "Daniel Ari Friedman", email = "daniel@activeinference.institute"}
 ]
@@ -18,27 +19,29 @@ dependencies = [
     "numpy>=1.24.0",
     "matplotlib>=3.7.0",
     "pyyaml>=6.0",
-    "defusedxml>=0.7.1",
+    "bond-api",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
+    "ruff>=0.6.0",
+    "mypy>=1.10.0",
+    "types-PyYAML>=6.0",
 ]
 
+[tool.uv.sources]
+bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+
 [tool.pytest.ini_options]
-# RASP Strict Assertion: Tests must be clearly separated and structurally identifiable
 pythonpath = [".", "src"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-# `--strict-markers` prevents typos in marker definitions
 addopts = "-v --tb=short --strict-markers"
 
 [tool.coverage.run]
-# Core Template Rule: We only calculate coverage for primary source code (`src/`),
-# ensuring test code itself does not artificially inflate metric scores.
 source = ["src"]
 branch = true
 omit = [
@@ -48,8 +51,6 @@ omit = [
 ]
 
 [tool.coverage.report]
-# ≥90% on src/ is the enforced gate; live coverage % is tracked in
-# docs/_generated/COUNTS.md (do not hardcode it here — it drifts).
 fail_under = 90
 show_missing = true
 precision = 2
@@ -59,5 +60,14 @@ exclude_lines = [
     "raise NotImplementedError",
 ]
 
-[tool.uv]
-# Inherits workspace settings from root pyproject.toml
+[tool.mypy]
+mypy_path = ["src", "."]
+explicit_package_bases = true
+# Runtime is 3.14; >=3.12 is required to parse numpy 2.x's PEP-695 `type` stubs.
+python_version = "3.12"
+warn_return_any = true
+files = ["src", "scripts"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

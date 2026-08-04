@@ -5,7 +5,7 @@ One folder per skill. Each ships `AGENTS.md`, `README.md`, `SKILL.md`.
 
 | Skill | Purpose |
 | --- | --- |
-| [`dr-no/`](dr-no/AGENTS.md) | Drive this exemplar end-to-end. |
+| [`dr-no/`](dr-no/AGENTS.md) | Run the CRAB KEY film package end-to-end (mission, gates, figures). |
 
 ## Skill contract
 

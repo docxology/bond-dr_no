@@ -1,22 +1,20 @@
-authors:
-- affiliation: Active Inference Institute
-  family-names: Friedman
-  given-names: Daniel Ari
-  orcid: 0000-0001-6232-9096
 cff-version: 1.2.0
-date-released: '2026-07-10'
-doi: 10.5281/zenodo.20417136
+message: "If you use this software, please cite it as below."
+title: "Dr. No: CRAB KEY — Special-Agent Mission Software"
+abstract: >-
+  Deterministic radiation/isotope forensics: gamma-spectrum isotope
+  identification, Gaussian plume dispersion, and Crab Key-style island threat
+  assessment, exposed through the BOND-API mission protocol.
+authors:
+  - family-names: Friedman
+    given-names: Daniel Ari
+    orcid: "https://orcid.org/0000-0001-6232-9096"
+    affiliation: "Active Inference Institute"
 keywords:
-- optimization algorithms
-- gradient descent
-- convergence analysis
-- numerical methods
-- mathematical programming
-- reproducible research
-- infrastructure automation
+  - gamma-ray spectroscopy
+  - isotope identification
+  - radiological dispersion
+  - island threat assessment
+version: "0.1.0"
+date-released: "2026-08-04"
 license: MIT
-message: If you use this software, please cite it using the metadata from this file.
-repository-code: https://github.com/docxology/dr_no
-title: Convergence Analysis of Gradient Descent Optimization
-type: software
-version: 2.5.2

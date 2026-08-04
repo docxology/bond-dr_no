@@ -1,6 +1,6 @@
 # dr-no skill — AGENTS.md
 
-Project-scoped skill bundle for the `dr_no` exemplar.
+Project-scoped skill bundle for the CRAB KEY (Dr. No) film package.
 
 | File | Purpose |
 | --- | --- |
@@ -10,12 +10,5 @@ Project-scoped skill bundle for the `dr_no` exemplar.
 
 ## Audience
 
-Agents that need to:
-
-- Drive the in-repo exemplar end-to-end.
-- Fork this exemplar as a starting scaffold.
-- Verify layer boundaries and thin-orchestrator contracts.
-
-## Cross-refs
-
-- Project root: [`../../..`](../../../).
+- Build/maintenance agents working inside `projects/working/bond/dr_no/`.
+- Agents verifying the BOND-API `MissionProvider` adapter and guardrails.

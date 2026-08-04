@@ -1,30 +1,20 @@
 {
+  "title": "Dr. No: CRAB KEY — Special-Agent Mission Software",
+  "description": "Deterministic radiation/isotope forensics: gamma-spectrum isotope identification, Gaussian plume dispersion, and Crab Key-style island threat assessment, exposed through the BOND-API mission protocol.",
   "creators": [
     {
-      "affiliation": "Active Inference Institute",
       "name": "Friedman, Daniel Ari",
-      "orcid": "0000-0001-6232-9096"
+      "orcid": "0000-0001-6232-9096",
+      "affiliation": "Active Inference Institute"
     }
-  ],
-  "description": "Source code for Convergence Analysis of Gradient Descent Optimization (2026).",
-  "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
   ],
   "license": "MIT",
-  "related_identifiers": [
-    {
-      "identifier": "10.5281/zenodo.20417136",
-      "relation": "isVersionOf",
-      "scheme": "doi"
-    }
+  "keywords": [
+    "gamma-ray spectroscopy",
+    "isotope identification",
+    "radiological dispersion",
+    "island threat assessment"
   ],
-  "title": "Convergence Analysis of Gradient Descent Optimization",
-  "upload_type": "software",
-  "version": "2.5.2"
+  "version": "0.1.0",
+  "upload_type": "software"
 }

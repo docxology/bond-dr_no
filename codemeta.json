@@ -1,31 +1,25 @@
 {
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
+  "name": "dr_no",
+  "description": "CRAB KEY — deterministic radiation/isotope forensics for the Dr. No film: gamma-spectrum isotope identification, Gaussian plume dispersion, and island threat assessment, exposed through the BOND-API mission protocol.",
+  "codeRepository": "local-only (PROJECT BOND working tree)",
+  "license": "https://spdx.org/licenses/MIT",
+  "version": "0.1.0",
   "author": [
     {
-      "@id": "https://orcid.org/0000-0001-6232-9096",
       "@type": "Person",
-      "affiliation": {
-        "@type": "Organization",
-        "name": "Active Inference Institute"
-      },
+      "givenName": "Daniel Ari",
       "familyName": "Friedman",
-      "givenName": "Daniel Ari"
+      "identifier": "https://orcid.org/0000-0001-6232-9096",
+      "affiliation": "Active Inference Institute"
     }
   ],
-  "codeRepository": "https://github.com/docxology/dr_no",
-  "dateModified": "2026-07-10",
-  "identifier": "10.5281/zenodo.20417136",
+  "programmingLanguage": "Python",
   "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
-  ],
-  "license": "https://spdx.org/licenses/MIT",
-  "name": "Convergence Analysis of Gradient Descent Optimization",
-  "version": "2.5.2"
+    "gamma-ray spectroscopy",
+    "isotope identification",
+    "radiological dispersion",
+    "island threat assessment"
+  ]
 }
