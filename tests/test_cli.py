@@ -68,3 +68,16 @@ def test_run_phase_unknown() -> None:
     from dr_no.mission import MissionProvider
 
     assert cli.run_phase("nope", MissionProvider()) == 1
+
+
+def test_unregistered_provider_exits_two(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A missing registration is reported and exits 2, never a silent success.
+
+    Point the CLI at a slug the registry does not know. The lookup miss must
+    surface as a named error rather than falling through to a default provider.
+    """
+    monkeypatch.setattr(cli, "SLUG", "not_a_registered_film")
+    assert cli.main(["brief"]) == 2
+    assert "not registered" in capsys.readouterr().out

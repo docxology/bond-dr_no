@@ -66,7 +66,7 @@ from dr_no.spectrum_processing import (
     net_peak_area,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 FILM = "Dr. No"
 CODENAME = "CRAB KEY"
 

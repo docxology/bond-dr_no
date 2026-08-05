@@ -190,3 +190,23 @@ def test_estimate_activity_validation() -> None:
         estimate_activity(
             1.0, gamma_intensity=0.5, acquisition_time_s=60.0, detector_efficiency=0.0
         )
+
+
+def test_line_intensity_raises_for_an_isotope_with_no_lines(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A line-less isotope cannot be quantified; that must raise, not return 0.
+
+    A zero intensity would divide into the Currie MDA and produce an infinite
+    or absurd detection limit rather than an error. The library is extended with
+    a real ``IsotopeProfile`` carrying no lines — a real object with real
+    behaviour, not a stub.
+    """
+    import dr_no.canonical as canonical_module
+    from dr_no.canonical import line_intensity
+
+    extended = dict(isotope_library())
+    extended["Nu-000"] = IsotopeProfile(name="Nu-000", half_life_y=1.0, gamma_lines=())
+    monkeypatch.setattr(canonical_module, "isotope_library", lambda: extended)
+    with pytest.raises(ValueError, match="no gamma lines to quantify"):
+        line_intensity("Nu-000", 100.0)

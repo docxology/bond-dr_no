@@ -23,9 +23,10 @@ scores each candidate by the summed intensity of its matched lines scaled by
 the square root of the matched-line fraction.
 
 The library holds {{NUM_ISOTOPES}} real isotopes spanning {{NUM_GAMMA_LINES}}
-principal lines, from the 59.5 keV line of Am-241 to the 2.6 MeV line of
-Tl-208, plus fission products (Cs-137, I-131), activation products (Co-60,
-Na-22), and naturally occurring material (K-40, U-235).
+principal lines, from {{LIBRARY_MIN_LINE_KEV}} keV (Am-241) to
+{{LIBRARY_MAX_LINE_KEV}} keV (Tl-208): fission products (Cs-137, I-131),
+activation products (Co-60, Na-22), naturally occurring material (K-40, U-235),
+and calibration standards (Ba-133, Eu-152).
 
 ## 2.2 Gaussian plume dispersion
 
@@ -56,10 +57,11 @@ against per-isotope inhalation dose coefficients and a breathing rate,
 
 $$ \dot{D} = C \sum_{k} f_k\, \mathrm{DCF}_k \, \dot{V}.$$
 
-The dose rate is mapped onto a five-band threat scale (LOW, MODERATE, HIGH,
-SEVERE, CRITICAL); a facility whose containment is breached is escalated one
-band. The island report records the worst threat and, for each facility, a
-containment action (none / shelter / evacuation).
+The dose rate is mapped onto a {{NUM_THREAT_BANDS}}-band threat scale
+({{THREAT_BANDS_CSV}}); a facility whose containment is breached is escalated
+one band. The island report records the worst threat and, for each facility, a
+containment action (none / shelter / evacuation). Shelter is triggered at the
+declared action concentration of {{ACTION_CONCENTRATION_BQ_M3}} Bq/m³.
 
 ## 2.4 Radioactive decay chains
 
@@ -74,33 +76,38 @@ $$ N_k(t) = N_0 \sum_{j=1}^{k}
 
 where $\lambda = \ln 2 / T_{1/2}$. The parent activity falls
 exponentially, and a faster-decaying daughter may approach transient
-equilibrium. For the canonical iodine-131 release,
-$T_{1/2} = $ {{I131_HALF_LIFE_DAYS}} d, so after 7 days the I-131 activity is
-{{I131_FRACTION_7D_PCT}}% of its initial value — a decision-relevant
-correction for any follow-up mission.
+equilibrium. For the declared {{DECAY_CHAIN_PROJECTED}} release,
+$T_{1/2} = $ {{PARENT_HALF_LIFE_DAYS}} d, so after {{DECAY_ELAPSED_DAYS}} days
+the parent activity is {{PARENT_FRACTION_REMAINING_PCT}}% of its initial value
+— a decision-relevant correction for any follow-up mission.
 
 ## 2.5 Spectrum calibration and detection limits
 
 Beyond identifying peaks, the package quantifies them. A least-squares linear
-calibration maps detector channel to energy, returning the calibration gain
-({{CALIBRATION_GAIN}} keV/channel here) and the coefficient of determination
-$R^2$ ({{CALIBRATION_R2}} for the canonical fit). Net photopeak areas are
+calibration maps detector channel to energy over the declared calibration lines,
+returning the calibration gain ({{CALIBRATION_GAIN}} keV/channel here) and the
+coefficient of determination $R^2$ ({{CALIBRATION_R2}} for the canonical fit).
+A fit with fewer than two matched lines raises rather than reporting a zero
+gain. Net photopeak areas are
 computed with a linearly interpolated background and a Poisson-propagated
 uncertainty. The minimum detectable activity follows Currie's formalism,
 
 $$ L_D = 2.71 + 4.65\sqrt{B}, \qquad \mathrm{MDA} = \frac{L_D}{t\,\varepsilon\,I},$$
 
 which bounds what a measurement can actually claim to have seen — for the
-canonical detector the MDA at the Cs-137 line is {{MDA_CS137_BQ}} Bq.
+canonical detector the MDA at the {{QUANTIFIED_LINE}} line
+({{QUANTIFIED_LINE_KEV}} keV) is {{MDA_BQ}} Bq.
 
 ## 2.6 Shielding, attenuation, and external dose
 
 Exponential absorption governs every barrier: $I(x) = I_0 e^{-\mu x}$ with
-$\mu = (\mu/\rho)\,\rho$ from a real mass-attenuation table (lead, iron,
-concrete, water). The half-value layer of lead at the 662 keV Cs-137 line is
-{{HVL_LEAD_662_CM}} cm, and the tenth-value layer of concrete at the 1332 keV
-Co-60 line is {{TVL_CONCRETE_1332_CM}} cm. A {{TRANSMISSION_LEAD_5CM_662_PCT}}%
-transmission fraction survives 5 cm of lead at 662 keV. External dose follows
-the point-source inverse-square law with the specific gamma-ray constant
-($\Gamma_{Co60} = $ {{GAMMA_CONSTANT_CO60}} mSv·m²·h⁻¹·GBq⁻¹), giving an
-unshielded Co-60 dose rate of {{EXTERNAL_DOSE_100M_MSV_H}} mSv/h at 100 m.
+$\mu = (\mu/\rho)\,\rho$ from a real mass-attenuation table
+({{SHIELDING_MATERIALS_CSV}}), interpolated log-log in energy. The half-value
+layer of {{SHIELD_MATERIAL}} at {{SHIELD_ENERGY_KEV}} keV is {{HVL_CM}} cm, and
+the tenth-value layer of {{TVL_MATERIAL}} at {{TVL_ENERGY_KEV}} keV is
+{{TVL_CM}} cm. A {{TRANSMISSION_SHIELD_PCT}}% transmission fraction survives
+{{SHIELD_THICKNESS_CM}} cm of {{SHIELD_MATERIAL}} at {{SHIELD_ENERGY_KEV}} keV.
+External dose follows the point-source inverse-square law with the specific
+gamma-ray constant ($\Gamma = $ {{GAMMA_CONSTANT_PROBE}} mSv·m²·h⁻¹·GBq⁻¹ for
+{{DOSE_PROBE_ISOTOPE}}), giving an unshielded dose rate of
+{{EXTERNAL_DOSE_PROBE_MSV_H}} mSv/h at {{DOSE_PROBE_DISTANCE_M}} m.

@@ -1,63 +1,167 @@
-@misc{turner1994workbook,
-  author = {Turner, D. B.},
-  title = {Workbook of Atmospheric Dispersion Estimates},
-  edition = {2nd},
-  publisher = {Lewis Publishers},
-  year = {1994}
-}
+% CRAB KEY (dr_no) references.
+%
+% Every entry below is a real, checkable source for a model actually implemented
+% in src/dr_no/. Entries are deliberately conservative: where a DOI could not be
+% confirmed it is omitted rather than guessed, and two earlier entries were
+% removed outright rather than shipped unverified —
+%   * "Kennedy, Strenge & Pauley (2011), DCAL and the RADTRAN Family of Codes"
+%     conflated two unrelated code families under an unconfirmed title; the
+%     inhalation dose coefficients it was cited for are covered by icrp119
+%     and icrp72 below.
+%   * "Martin, J. A. & Green, D. A. (1976), Dispersion and Dosimetry Models"
+%     appears to be a garbled attribution; the power-law Pasquill-Gifford fit
+%     the plume model actually uses is martin1976comment (D. O. Martin, JAPCA).
 
-@misc{martin1976dispersion,
-  author = {Martin, J. A. and Green, D. A.},
-  title = {Dispersion and Dosimetry Models},
-  howpublished = {EPA dispersion-parameter guidance},
-  year = {1976}
-}
+% --- Gamma spectroscopy: detector model, peak search, identification ---------
 
-@misc{kennedy2011dcal,
-  author = {Kennedy, W. E. and Strenge, T. J. and Pauley, K. A.},
-  title = {{DCAL} and the {RADTRAN} Family of Codes},
-  year = {2011}
-}
-
-@article{bateman1910solution,
-  author = {Bateman, H.},
-  title = {The Solution of a System of Differential Equations Occurring in the Theory of Radioactive Transformations},
-  journal = {Proceedings of the Cambridge Philosophical Society},
-  volume = {15},
-  pages = {423--427},
-  year = {1910}
+@book{knoll2010radiation,
+  author    = {Knoll, Glenn F.},
+  title     = {Radiation Detection and Measurement},
+  edition   = {4th},
+  publisher = {John Wiley \& Sons},
+  address   = {Hoboken, NJ},
+  year      = {2010},
+  isbn      = {978-0-470-13148-0},
+  note      = {Detector resolution models, photopeak analysis, and net-area
+               background subtraction}
 }
 
 @article{currie1968limits,
-  author = {Currie, L. A.},
-  title = {Limits for Qualitative Detection and Quantitative Determination: Application to Radiochemistry},
+  author  = {Currie, Lloyd A.},
+  title   = {Limits for Qualitative Detection and Quantitative Determination:
+             Application to Radiochemistry},
   journal = {Analytical Chemistry},
-  volume = {40},
-  number = {3},
-  pages = {586--593},
-  year = {1968},
-  doi = {10.1021/ac60259a007}
+  volume  = {40},
+  number  = {3},
+  pages   = {586--593},
+  year    = {1968},
+  doi     = {10.1021/ac60259a007},
+  note    = {The decision-level and detection-limit formalism behind
+             minimum_detectable_activity()}
+}
+
+@misc{ensdf,
+  author       = {{National Nuclear Data Center}},
+  title        = {{ENSDF}: Evaluated Nuclear Structure Data File},
+  howpublished = {Brookhaven National Laboratory},
+  note         = {Gamma-ray energies, emission intensities, and half-lives
+                  underlying the isotope library and decay-chain table}
+}
+
+% --- Radioactive decay chains ------------------------------------------------
+
+@article{bateman1910solution,
+  author  = {Bateman, Harry},
+  title   = {The Solution of a System of Differential Equations Occurring in
+             the Theory of Radioactive Transformations},
+  journal = {Proceedings of the Cambridge Philosophical Society},
+  volume  = {15},
+  pages   = {423--427},
+  year    = {1910},
+  note    = {The chain solution implemented in decay_chain}
+}
+
+% --- Photon attenuation and shielding ----------------------------------------
+
+@techreport{hubbell1995tables,
+  author      = {Hubbell, J. H. and Seltzer, S. M.},
+  title       = {Tables of {X}-Ray Mass Attenuation Coefficients and Mass
+                 Energy-Absorption Coefficients from 1 {keV} to 20 {MeV} for
+                 Elements {Z} = 1 to 92 and 48 Additional Substances of
+                 Dosimetric Interest},
+  institution = {National Institute of Standards and Technology},
+  number      = {NISTIR 5632},
+  year        = {1995},
+  note        = {Source of the mu/rho values in MASS_ATTENUATION_CM2_G}
 }
 
 @misc{nistxcom,
-  author = {Berger, M. J. and Hubbell, J. H. and Seltzer, S. M. and others},
-  title = {{XCOM}: Photon Cross Sections Database},
+  author       = {Berger, M. J. and Hubbell, J. H. and Seltzer, S. M. and
+                  Chang, J. and Coursey, J. S. and Sukumar, R. and
+                  Zucker, D. S. and Olsen, K.},
+  title        = {{XCOM}: Photon Cross Sections Database},
   howpublished = {NIST Standard Reference Database 8 (XGAM)},
-  year = {2010},
-  note = {Mass attenuation coefficients mu/rho for common shielding materials}
+  year         = {2010},
+  note         = {Photon cross sections cross-checking the shielding tables}
 }
 
-@book{knoll2010radiation,
-  author = {Knoll, G. F.},
-  title = {Radiation Detection and Measurement},
-  edition = {4th},
-  publisher = {John Wiley \& Sons},
-  year = {2010}
-}
+% --- Dose coefficients and exposure-rate constants ---------------------------
 
 @misc{icrp119compendium,
-  author = {{International Commission on Radiological Protection}},
-  title = {Compendium of Dose Coefficients based on {ICRP} Publication 60},
+  author       = {{International Commission on Radiological Protection}},
+  title        = {Compendium of Dose Coefficients based on {ICRP} Publication 60},
   howpublished = {ICRP Publication 119, Annals of the ICRP 41 (Suppl.)},
-  year = {2012}
+  year         = {2012},
+  note         = {Committed effective dose coefficients behind INHALATION_DCF_SV_BQ}
+}
+
+@misc{icrp72,
+  author       = {{International Commission on Radiological Protection}},
+  title        = {Age-dependent Doses to Members of the Public from Intake of
+                  Radionuclides: Part 5, Compilation of Ingestion and Inhalation
+                  Dose Coefficients},
+  howpublished = {ICRP Publication 72, Annals of the ICRP 26(1)},
+  year         = {1996}
+}
+
+@article{smith2012exposure,
+  author  = {Smith, Daniel S. and Stabin, Michael G.},
+  title   = {Exposure Rate Constants and Lead Shielding Values for over 1,100
+             Radionuclides},
+  journal = {Health Physics},
+  volume  = {102},
+  number  = {3},
+  pages   = {271--291},
+  year    = {2012},
+  note    = {Specific gamma-ray constants behind GAMMA_CONSTANT_MSV_M2_H_GBQ}
+}
+
+% --- Atmospheric dispersion ---------------------------------------------------
+
+@article{pasquill1961estimation,
+  author  = {Pasquill, F.},
+  title   = {The Estimation of the Dispersion of Windborne Material},
+  journal = {The Meteorological Magazine},
+  volume  = {90},
+  number  = {1063},
+  pages   = {33--49},
+  year    = {1961},
+  note    = {Origin of the A--F atmospheric stability classification}
+}
+
+@article{gifford1961use,
+  author  = {Gifford, Franklin A.},
+  title   = {Use of Routine Meteorological Observations for Estimating
+             Atmospheric Dispersion},
+  journal = {Nuclear Safety},
+  volume  = {2},
+  number  = {4},
+  pages   = {47--51},
+  year    = {1961},
+  note    = {The dispersion curves paired with Pasquill's stability classes}
+}
+
+@article{martin1976comment,
+  author  = {Martin, D. O.},
+  title   = {Comment on ``The Change of Concentration Standard Deviations with
+             Distance''},
+  journal = {Journal of the Air Pollution Control Association},
+  volume  = {26},
+  number  = {2},
+  pages   = {145--147},
+  year    = {1976},
+  note    = {Power-law fits to the Pasquill-Gifford curves; the a/b/c/d/f
+             coefficient form used in plume_model.STABILITY_TABLE}
+}
+
+@book{turner1994workbook,
+  author    = {Turner, D. Bruce},
+  title     = {Workbook of Atmospheric Dispersion Estimates: An Introduction to
+               Dispersion Modeling},
+  edition   = {2nd},
+  publisher = {Lewis Publishers / CRC Press},
+  address   = {Boca Raton, FL},
+  year      = {1994},
+  isbn      = {978-1-56670-023-6},
+  note      = {Standard treatment of the Gaussian plume with ground reflection}
 }

@@ -21,6 +21,7 @@ limit. All deterministic.
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 
 __all__ = [
     "MASS_ATTENUATION_CM2_G",
@@ -28,6 +29,7 @@ __all__ = [
     "MATERIAL_DENSITY_G_CM3",
     "half_value_layer",
     "linear_attenuation_coefficient",
+    "mass_attenuation",
     "required_shield_thickness",
     "tenth_value_layer",
     "transmission_factor",
@@ -57,36 +59,55 @@ _MIN_ENERGY_MEV = 0.1
 _MAX_ENERGY_MEV = 2.0
 
 
-def _mass_attenuation(energy_mev: float, material: str) -> float:
-    """Log-log interpolated mass attenuation coefficient (cm²/g)."""
+def mass_attenuation(energy_mev: float, material: str) -> float:
+    """Log-log interpolated mass attenuation coefficient mu/rho (cm²/g).
+
+    Table energies bracket the requested energy; between them the coefficient is
+    interpolated linearly in ``log(E)`` and ``log(mu/rho)``, which is the
+    standard treatment for photon cross-sections away from absorption edges.
+
+    Raises:
+        ValueError: the energy is outside the tabulated range.
+        KeyError: the material is not tabulated.
+    """
     if not _MIN_ENERGY_MEV <= energy_mev <= _MAX_ENERGY_MEV:
         raise ValueError(
-            f"energy {energy_mev} MeV is outside the table range [{_MIN_ENERGY_MEV}, {_MAX_ENERGY_MEV}]"
+            f"energy {energy_mev} MeV is outside the table range "
+            f"[{_MIN_ENERGY_MEV}, {_MAX_ENERGY_MEV}]"
         )
-    table = MASS_ATTENUATION_CM2_G.get(material)
-    assert table is not None, f"material {material!r} must be present in the table"
-    energies = sorted(table)
+    try:
+        table = MASS_ATTENUATION_CM2_G[material]
+    except KeyError:
+        raise KeyError(
+            f"no mass-attenuation table for material {material!r}; expected one of {MATERIALS}"
+        ) from None
     if energy_mev in table:
         return float(table[energy_mev])
-    # Log-log linear interpolation between the bracketing table points.
-    e_lo = energies[0]
-    e_hi = energies[-1]
-    for i in range(len(energies) - 1):
-        if energies[i] <= energy_mev <= energies[i + 1]:
-            e_lo, e_hi = energies[i], energies[i + 1]
-            break
-    mu_lo = table[e_lo]
-    mu_hi = table[e_hi]
+    # Log-log linear interpolation between the bracketing table points. The
+    # range check above guarantees a bracket exists, so there is no fallback
+    # branch to silently return an endpoint value.
+    energies = sorted(table)
+    index = bisect_right(energies, energy_mev) - 1
+    e_lo, e_hi = energies[index], energies[index + 1]
+    mu_lo, mu_hi = table[e_lo], table[e_hi]
     t = (math.log(energy_mev) - math.log(e_lo)) / (math.log(e_hi) - math.log(e_lo))
     return float(math.exp(math.log(mu_lo) + t * (math.log(mu_hi) - math.log(mu_lo))))
 
 
 def linear_attenuation_coefficient(energy_mev: float, material: str) -> float:
-    """Linear attenuation coefficient mu (cm⁻¹) = (mu/rho) * rho."""
-    density = MATERIAL_DENSITY_G_CM3.get(material)
-    if density is None:
-        raise KeyError(f"unknown shielding material {material!r}; expected one of {MATERIALS}")
-    return _mass_attenuation(energy_mev, material) * density
+    """Linear attenuation coefficient mu (cm⁻¹) = (mu/rho) * rho.
+
+    Raises:
+        KeyError: the material has no tabulated density or attenuation data.
+        ValueError: the energy is outside the tabulated range.
+    """
+    try:
+        density = MATERIAL_DENSITY_G_CM3[material]
+    except KeyError:
+        raise KeyError(
+            f"unknown shielding material {material!r}; expected one of {MATERIALS}"
+        ) from None
+    return mass_attenuation(energy_mev, material) * density
 
 
 def transmission_factor(energy_mev: float, thickness_cm: float, material: str) -> float:

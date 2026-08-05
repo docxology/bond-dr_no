@@ -111,20 +111,32 @@ def facility_threat_level(
 def containment_recommendation(
     dose_rate_sv_s: float,
     concentration_bq_m3: float,
+    *,
+    evacuation_dose_rate_sv_s: float = SHELTER_THRESHOLD_SV_S,
+    action_concentration_bq_m3: float = ACTION_CONCENTRATION_BQ_M3,
 ) -> str:
     """Recommended contamination-containment action for a location.
 
-    Returns ``"evacuation"`` when the dose rate calls for it, ``"shelter"`` when
-    the contamination concentration is above the action threshold, and
-    ``"none"`` otherwise.
+    Returns ``"evacuation"`` when the dose rate reaches
+    ``evacuation_dose_rate_sv_s``, ``"shelter"`` when the contamination
+    concentration reaches ``action_concentration_bq_m3``, and ``"none"``
+    otherwise.
+
+    Both thresholds are parameters rather than baked-in constants: the mission
+    scenario declares them in ``manuscript/config.yaml`` and they are threaded
+    through :func:`assess_island`.
     """
     if dose_rate_sv_s < 0:
         raise ValueError("dose rate must be non-negative")
     if concentration_bq_m3 < 0:
         raise ValueError("concentration must be non-negative")
-    if dose_rate_sv_s >= SHELTER_THRESHOLD_SV_S:
+    if evacuation_dose_rate_sv_s <= 0:
+        raise ValueError("evacuation dose-rate threshold must be positive")
+    if action_concentration_bq_m3 <= 0:
+        raise ValueError("action concentration threshold must be positive")
+    if dose_rate_sv_s >= evacuation_dose_rate_sv_s:
         return "evacuation"
-    if concentration_bq_m3 >= ACTION_CONCENTRATION_BQ_M3:
+    if concentration_bq_m3 >= action_concentration_bq_m3:
         return "shelter"
     return "none"
 
@@ -133,14 +145,30 @@ def containment_recommendation(
 class IslandAssessment:
     """Aggregate island-wide radiological threat assessment."""
 
-    overall_level: str
+    overall_level: str  # the island posture = the single worst facility band
     facilities: dict[str, str]  # facility name -> threat level
-    worst_threat: str  # the single highest threat level observed
     downwind_contamination_m: float  # isopleth extent of the action threshold
     containment_actions: dict[str, str]  # facility name -> recommended action
 
+    @property
+    def worst_threat(self) -> str:
+        """Alias of :attr:`overall_level`.
+
+        The island posture *is* the worst facility band — these were two stored
+        fields that were always assigned the same value, which is two places for
+        one fact to drift. It is now one field plus this read-only alias, kept
+        because the name reads better at call sites that mean "the worst one".
+        """
+        return self.overall_level
+
     def maximum_rank(self) -> int:
-        """Highest threat rank among facilities."""
+        """Highest threat rank among facilities.
+
+        Raises:
+            ValueError: no facilities were assessed.
+        """
+        if not self.facilities:
+            raise ValueError("no facilities were assessed; maximum rank is undefined")
         return max(THREAT_RANK[level] for level in self.facilities.values())
 
 
@@ -172,7 +200,8 @@ def assess_island(
     meteo: Meteorology,
     *,
     source_Q: float,
-    warn_dose_rate_sv_s: float = SHELTER_THRESHOLD_SV_S,
+    evacuation_dose_rate_sv_s: float = SHELTER_THRESHOLD_SV_S,
+    action_concentration_bq_m3: float = ACTION_CONCENTRATION_BQ_M3,
 ) -> IslandAssessment:
     """Assess the radiological threat across an island of detected facilities.
 
@@ -187,39 +216,46 @@ def assess_island(
         facilities: the detected facilities (source-referenced positions).
         meteo: local meteorology driving the plume.
         source_Q: presumed release rate (Bq/s) at the source reference.
-        warn_dose_rate_sv_s: dose rate (Sv/s) that triggers the evacuation band
-            used as the "worst" warning level in the report.
+        evacuation_dose_rate_sv_s: dose rate (Sv/s) at or above which a facility
+            is told to evacuate rather than shelter. Threaded into every
+            :func:`containment_recommendation` call.
+        action_concentration_bq_m3: contamination concentration (Bq/m³) that
+            defines both the shelter trigger and the downwind isopleth extent.
 
     Returns:
-        An :class:`IslandAssessment` aggregating the per-facility results.
+        An :class:`IslandAssessment` aggregating the per-facility results. With
+        no facilities the island posture is the floor band, ``"LOW"``.
     """
     facilities_list = list(facilities)
     levels: dict[str, str] = {}
     actions: dict[str, str] = {}
-    worst: int = -1
-    worst_name: str = ""
+    worst_rank: int = -1
+    worst_level: str = THREAT_LEVELS[0]
     for facility in facilities_list:
         rate, concentration = _facility_dose_rate(facility, meteo, source_Q=source_Q)
         level = facility_threat_level(rate, containment=facility.containment)
         levels[facility.name] = level
-        action = containment_recommendation(rate, concentration)
-        actions[facility.name] = action
+        actions[facility.name] = containment_recommendation(
+            rate,
+            concentration,
+            evacuation_dose_rate_sv_s=evacuation_dose_rate_sv_s,
+            action_concentration_bq_m3=action_concentration_bq_m3,
+        )
         rank = THREAT_RANK[level]
-        if rank > worst:
-            worst = rank
-            worst_name = level
+        if rank > worst_rank:
+            worst_rank = rank
+            worst_level = level
 
     extent = isopleth_extent(
-        ACTION_CONCENTRATION_BQ_M3,
+        action_concentration_bq_m3,
         Q=source_Q,
         u=meteo.wind_speed_m_s,
         stability=meteo.stability,
         H=meteo.release_height_m,
     )
     return IslandAssessment(
-        overall_level=worst_name if worst_name else "LOW",
+        overall_level=worst_level,
         facilities=levels,
-        worst_threat=worst_name if worst_name else "LOW",
         downwind_contamination_m=extent,
         containment_actions=actions,
     )

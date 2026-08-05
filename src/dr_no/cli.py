@@ -60,24 +60,27 @@ def run_phase(phase: str, provider: MissionProvider) -> int:
     return 0
 
 
+#: The slug this CLI drives. The provider registers itself under this name at
+#: ``dr_no.mission`` import time; a lookup miss means the frozen registration
+#: contract is broken, which is an error, not something to work around.
+SLUG = "dr_no"
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI entry point: ``run_mission.py <phase>`` with an optional explicit slug."""
+    """CLI entry point: ``run_mission.py <phase>``.
+
+    Exit codes: ``0`` success, ``1`` unknown phase reached via
+    :func:`run_phase`, ``2`` usage error or an unregistered provider.
+    """
     argv = list(sys.argv[1:] if argv is None else argv)
-    provider: MissionProvider | None = None
-    for name in ("dr_no",):
-        try:
-            provider = MISSION_REGISTRY.lookup(name)
-            break
-        except KeyError:
-            continue
-    if provider is None:
-        _print("CRAB KEY provider not registered")
+    try:
+        provider = MISSION_REGISTRY.lookup(SLUG)
+    except KeyError:
+        _print(f"CRAB KEY provider {SLUG!r} not registered")
         return 2
 
     phase = argv[0] if argv else "full"
     if phase not in _PHASES:
-        # Maintain a tolerant argv shape: an unknown first token is treated as
-        # the phase anyway when it is one of the phases; otherwise error.
         _print(f"usage: run_mission.py <{'|'.join(_PHASES)}>")
         return 2
     return run_phase(phase, provider)

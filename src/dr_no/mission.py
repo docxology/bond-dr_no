@@ -19,7 +19,6 @@ import hashlib
 import json
 from typing import Any, cast
 
-import numpy as np
 from bond_api.protocol import (  # type: ignore[import-untyped]
     Asset,
     Constraint,
@@ -36,18 +35,23 @@ from bond_api.protocol import (  # type: ignore[import-untyped]
 from bond_api.registry import GadgetRegistry, MissionRegistry  # type: ignore[import-untyped]
 
 from dr_no import __version__
-from dr_no.canonical import canonical_metrics, canonical_scenario, detector_energy_grid
+from dr_no.canonical import canonical_metrics, canonical_scenario
 from dr_no.decay_chain import decay_chains
 from dr_no.dose_assessment import GAMMA_CONSTANT_MSV_M2_H_GBQ, INHALATION_DCF_SV_BQ
 from dr_no.island_assessment import THREAT_LEVELS
 from dr_no.isotope_profiles import isotope_library, library_names
 from dr_no.plume_model import STABILITY_CLASSES
+from dr_no.scenario import load_scenario
 from dr_no.shielding import MATERIALS
 
 __all__ = ["MissionProvider"]
 
 _PACKAGE_VERSION = __version__
-_SEED = 42
+
+
+def _seed() -> int:
+    """The mission seed of record, declared in ``manuscript/config.yaml``."""
+    return load_scenario().seed
 
 
 def _input_hash() -> str:
@@ -55,11 +59,6 @@ def _input_hash() -> str:
     return hashlib.sha256(
         json.dumps(canonical_scenario(), sort_keys=True).encode("utf-8")
     ).hexdigest()[:16]
-
-
-def _detector_energies() -> np.ndarray:
-    """The canonical detector energy grid (keV)."""
-    return detector_energy_grid()
 
 
 def _detector_payload() -> dict[str, float]:
@@ -88,7 +87,7 @@ class MissionProvider:
         scenario = canonical_scenario()
         return MissionBrief(
             film=self.film,
-            codename="CRAB KEY",
+            codename=load_scenario().codename,
             objectives=(
                 "identify gamma-emitting isotopes from a measured spectrum",
                 "quantify, time-project, and shield against the radiological source",
@@ -162,7 +161,7 @@ class MissionProvider:
             results=metrics,
             provenance=Provenance(
                 package_version=_PACKAGE_VERSION,
-                seed=_SEED,
+                seed=_seed(),
                 input_hash=_input_hash(),
                 wall_time_s=0.0,
             ),

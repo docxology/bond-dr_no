@@ -1,62 +1,106 @@
 # CRAB KEY (dr_no) — TODO & integration register
 
-Status: **phase-4 deep improvement complete** — seven domain modules + a
-single-source-of-truth canonical metric layer, a deepened BOND-API mission
-adapter, thin CLIs, manuscript, figures, and a zero-mock ≥90% coverage test
-suite.
+**Status:** phase-5 review complete. Eight domain modules plus a config-backed
+scenario loader and a single-source metric pass; a frozen BOND-API mission
+adapter; thin CLIs; a fully tokenized manuscript; three deterministic figures;
+and a zero-mock suite at 99.01% coverage (measured — see
+[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md)).
 
-## Built (phase 2)
+What was built is described in [`README.md`](README.md) and
+[`docs/architecture.md`](docs/architecture.md); this file tracks only what is
+**not** done.
 
-- `src/dr_no/isotope_profiles.py` — gamma-spectrum isotope identification:
-  real 10-isotope emission-line library, detector spectrum synthesis, peak
-  detection, energy-window matching, activity estimation.
-- `src/dr_no/spectrum_processing.py` — quantification: least-squares energy
-  calibration (gain/offset/R²), background-subtracted net photopeak areas,
-  Currie minimum-detectable-activity (MDA).
-- `src/dr_no/decay_chain.py` — Bateman radioactive decay chains over five real
-  parent–daughter chains: populations/activities over time, transient
-  equilibrium ratios, fraction-remaining/time-to-fraction.
-- `src/dr_no/shielding.py` — gamma attenuation: real mass-attenuation tables
-  (lead/iron/concrete/water), transmission, half/tenth-value layers, required
-  shield thickness.
-- `src/dr_no/dose_assessment.py` — external point-source dose (specific gamma
-  constant + inverse-square), inhalation dose coefficients, combined and
-  integrated dose.
-- `src/dr_no/plume_model.py` — Gaussian plume dispersion: Pasquill–Gifford
-  classes A–F, downwind/crosswind concentration, ground-level max, isopleth
-  extent.
-- `src/dr_no/island_assessment.py` — Crab Key threat assessment: inhaled
-  dose-rate from plume concentration, five-band threat scoring, containment
-  action recommendation, island aggregation.
-- `src/dr_no/canonical.py` — single-source-of-truth canonical scenario and
-  metric computation consumed by both the mission results and manuscript
-  tokens.
-- `src/dr_no/mission.py` — FROZEN `bond_api.MissionProvider` adapter + gadget
-  registration.
-- `src/dr_no/manuscript_variables.py` — `{{TOKEN}}` hydration.
-- `src/dr_no/figures/plots.py` — gamma-spectrum, plume-field, and decay-curve
-  figures.
-- `scripts/run_mission.py`, `scripts/z_generate_manuscript_variables.py`.
-- Zero-mock tests, one per concept module + canonical + mission + manuscript +
-  CLI + figures + scripts smoke.
+## Open — model depth
 
-## Integration points / declared
+- [ ] **Compton continuum in the detector model.** `synthesize_spectrum()`
+      places Gaussian photopeaks on a *flat* background. Real spectra carry a
+      Compton continuum, backscatter peak, and Compton edge, which is what makes
+      real peak-finding hard. Adding one would make the identification problem
+      honest rather than easy. Acceptance: continuum shape derived from the
+      Klein–Nishina cross-section; existing round-trip identification tests must
+      still pass, with SNR thresholds re-tuned.
+- [ ] **Escape peaks and coincidence summing.** Single/double escape peaks above
+      1.022 MeV and true-coincidence summing for cascade emitters (Co-60 in
+      particular) are absent. Currently disclosed as a limitation in
+      `manuscript/07_scope_and_related_work.md` §7.3.
+- [ ] **Deposition in the plume.** The Gaussian plume has no dry or wet
+      deposition term, so it does not conserve mass against the ground and
+      overestimates far-field airborne concentration. A depletion factor would
+      be the smallest honest improvement.
+- [ ] **Multiplet resolution.** `detect_peaks()` collapses peaks closer than
+      `min_separation_keV` to the strongest candidate, so genuine doublets are
+      reported as one line. A fitted two-Gaussian deconvolution over the merged
+      region would resolve them.
+- [ ] **Threat-band provenance.** `_DOSE_THRESHOLDS_SV_S` band edges are chosen
+      for legibility, not derived from a published intervention level. Either
+      source them from a real protective-action guide and cite it, or keep them
+      declared and move them into `config.yaml` alongside the other thresholds.
 
-- **bond-utilities provenance**: `record_provenance_outcome` from
-  `bond_utilities.mission_io` is NOT yet consumed. Acceptance: once
-  bond-utilities ships its phase-1 mission_io, `mission.py` debrief/outcome
-  should delegate persistence through it (replacing the local `_input_hash`
-  provenance). Currently the Provenance block is built directly from the frozen
-  bond-api types, which is protocol-complete.
-- **bond-cli / bond-dashboard**: no dashboard or suite CLI binding yet. When a
-  suite CLI lands, wire `scripts/run_mission.py` as the film's registered
-  subcommand.
-- **bond-orchestrator / discovery**: verified via `bond_api.discovery` in tests
-  (`test_discovery_loads_provider_by_slug`); the orchestrator can already auto-
-  discover `dr_no` on `sys.path`.
+## Open — data quality
+
+- [ ] **Widen the attenuation table.** `MASS_ATTENUATION_CM2_G` holds six energy
+      points per material over 0.1–2.0 MeV. The Tl-208 2614.53 keV line in the
+      isotope library is therefore *outside* the shielding range — shielding
+      cannot currently be computed for the library's highest-energy emitter.
+      Extend to at least 3 MeV from the cited NIST tables.
+- [ ] **Per-isotope dose-coefficient provenance.** `INHALATION_DCF_SV_BQ` and
+      `GAMMA_CONSTANT_MSV_M2_H_GBQ` are representative literature values cited
+      collectively to ICRP 119 / Smith & Stabin. Pin each constant to its
+      specific table row so a reader can check any single number.
+
+## Open — suite integration
+
+- [ ] **bond-utilities provenance.** `record_provenance_outcome` from
+      `bond_utilities.mission_io` is not yet consumed. `mission.py` builds its
+      `Provenance` block directly from the frozen bond-api types, which is
+      protocol-complete but package-local. Acceptance: once bond-utilities ships
+      its phase-1 `mission_io`, delegate outcome persistence through it and drop
+      the local `_input_hash` helper.
+- [ ] **bond-cli registration.** No suite CLI binding yet. When a suite front
+      door lands, register `scripts/run_mission.py` as this film's subcommand.
+- [ ] **Cross-package mission.** `dr_no` is discoverable by the orchestrator
+      (verified in `tests/test_mission.py::test_discovery_loads_provider_by_slug`)
+      but does not yet participate in a multi-film chain such as OPERATION
+      OMNIBUS.
+
+## Open — tooling
+
+- [ ] **Automate `docs/_generated/COUNTS.md`.** It is currently regenerated by
+      hand from a real run, which is honest but manual — and a manual step is
+      how a "generated" file goes stale while still claiming to be generated.
+      A small script parsing `coverage json` output would close it.
+- [ ] **Remaining uncovered branches.** Six statements and seven partial
+      branches are uncovered, concentrated in `isotope_profiles.py` (93.88%):
+      the zero-activity skip, the unknown-isotope guard, and two peak-merge
+      edges. None is a failure path that could emit a wrong number, but they
+      should be pinned.
+
+## Closed in the phase-5 review
+
+Kept briefly as a record of what the regression tests in
+`tests/test_defect_regressions.py` now guard:
+
+- Config/computation drift — the `mission:` block was declared but never read;
+  `canonical.py` held a second, hardcoded copy of the scenario.
+- `isopleth_extent()` bisected a non-monotonic profile and reported 1 m of
+  contamination where the true extent was 10.9 m.
+- `assess_island()` accepted a `warn_dose_rate_sv_s` argument it never used.
+- `IslandAssessment` stored one fact in two fields that could disagree.
+- A zero-gain calibration fallback that would have rendered as a real number.
+- `_import_version()` swallowed `ImportError` and returned an empty version.
+- An `assert` in `shielding.py` that could never fire and would vanish under
+  `python -O`.
+- Figures rendered on a different energy grid (1500 vs 1200 bins) and without
+  the release height, so they depicted a different scenario from the metrics.
+- Version drift across `pyproject.toml` (0.1.0), `__init__.py` (0.2.0), and
+  `config.yaml` (0.1.0).
+- Two `references.bib` entries that could not be verified.
 
 ## Never
 
 - Never push; this tree is local-only.
-- Do not re-add template-scaffold lineage strings.
-- Do not introduce mocks or non-determinism.
+- Never change the public shape of `mission.py` or the `GADGETS` registry.
+- Never reintroduce template-scaffold lineage strings.
+- Never introduce mocks or non-determinism.
+- Never hand-author a metric in manuscript prose.
+- Never let a failure path return a plausible-looking number.

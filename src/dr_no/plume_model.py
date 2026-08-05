@@ -233,25 +233,68 @@ def isopleth_extent(
     stability: str,
     H: float = 0.0,
     max_km: float = 50.0,
-    steps: int = 2000,
+    steps: int = 200,
+    n_scan: int = 512,
 ) -> float:
-    """Downwind distance (m) at which centreline concentration falls to ``threshold``.
+    """Farthest downwind distance (m) whose centreline concentration is ``>= threshold``.
 
-    Binary-searches the centreline profile between the release point and
-    ``max_km`` km; returns the farthest downwind distance where the ground-level
-    centreline concentration is still ``>= threshold``. Returns ``0.0`` if the
-    threshold is not met even at the source. Deterministic.
+    The ground-level centreline profile of an **elevated** release is not
+    monotonic: it is ~0 at the source (the plume is still aloft), rises to a
+    maximum some way downwind as vertical spreading brings it to ground, then
+    decays. A plain bisection seeded at the release point is therefore invalid —
+    it assumes a monotone profile that only exists for a ground-level release
+    (``H = 0``).
+
+    This implementation does it in two deterministic stages:
+
+    1. **Locate the ground-level maximum** with a log-spaced scan of ``n_scan``
+       points over ``[1 m, max_km]``. If even the maximum is below ``threshold``
+       the release never reaches it anywhere, and the extent is ``0.0``.
+    2. **Bisect the decaying tail** from that maximum outward, where the profile
+       *is* monotone, for the crossing point.
+
+    Both failure modes this replaces produced a wrong number rather than an
+    error: seeded at ``x = 1 m``, the old search returned ``1.0`` for a release
+    that contaminated nothing, and ``0.0`` for an elevated release whose
+    threshold sat between the near-field value and the true downwind peak —
+    silently reporting "no contamination" over a contaminated area.
+
+    Args:
+        threshold: concentration (Bq/m³) defining the isopleth.
+        Q: release rate (Bq/s).
+        u: wind speed (m/s).
+        stability: Pasquill-Gifford class (A-F).
+        H: effective release height (m).
+        max_km: outer bound of the search (km).
+        steps: bisection iterations on the tail.
+        n_scan: log-spaced samples used to locate the ground-level maximum.
+
+    Returns:
+        The farthest downwind distance (m) at or above ``threshold``, ``max_km``
+        in metres if the threshold still holds at the outer bound, or ``0.0``
+        if it is never met. Deterministic.
     """
     _validate_source(Q, u, H)
     if threshold <= 0:
         raise ValueError("threshold must be positive")
     if steps < 2:
         raise ValueError("steps must be >= 2")
+    if n_scan < 2:
+        raise ValueError("n_scan must be >= 2")
 
-    lo = 1.0  # first metre (plume needs x > 0)
     hi = max_km * _KM
+
+    # Stage 1: find the ground-level maximum of the (unimodal) profile.
+    scan = np.logspace(0.0, math.log10(hi), n_scan)  # 1 m .. max_km, log-spaced
+    values = [centerline_concentration(float(x), Q=Q, u=u, stability=stability, H=H) for x in scan]
+    peak_index = int(np.argmax(values))
+    if values[peak_index] < threshold:
+        return 0.0
     if centerline_concentration(hi, Q=Q, u=u, stability=stability, H=H) >= threshold:
         return hi
+
+    # Stage 2: bisect the monotone decaying tail beyond the peak.
+    lo = float(scan[peak_index])
     for _ in range(steps):
         mid = 0.5 * (lo + hi)
         if centerline_concentration(mid, Q=Q, u=u, stability=stability, H=H) >= threshold:

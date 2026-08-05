@@ -27,12 +27,13 @@ from dr_no.mission import (
     GADGET_REGISTRY,
     GADGETS,
     MISSION_REGISTRY,
-    _detector_energies,
     _input_hash,
+    _seed,
 )
 from dr_no.mission import (
     MissionProvider as DrNoProvider,
 )
+from dr_no.scenario import load_scenario
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -89,12 +90,50 @@ def test_execute(provider: DrNoProvider) -> None:
     assert "Co-60" in results["identified_isotopes"]
     # Deepened quantification, decay, shielding, and dose metrics.
     assert results["calibration_r2"] > 0.99
-    assert results["mda_cs137_bq"] > 0
-    assert 0 < results["i131_fraction_7d"] < 1
-    assert results["hvl_lead_662_cm"] > 0
-    assert 0 < results["transmission_lead_5cm_662"] <= 1
-    assert results["external_dose_100m_msv_h"] > 0
-    assert results["net_area_cs137"] > 0
+    assert results["mda_bq"] > 0
+    assert 0 < results["parent_fraction_remaining"] < 1
+    assert results["hvl_cm"] > 0
+    assert 0 < results["transmission_shield"] <= 1
+    assert results["external_dose_probe_msv_h"] > 0
+    assert results["net_area_quantified"] > 0
+
+
+def test_execute_results_match_canonical_metrics(provider: DrNoProvider) -> None:
+    """The provider reports exactly what canonical_metrics() computes.
+
+    Anything the mission adds on top (``steps_planned``, ``facilities_assessed``)
+    is derived from the plan, not recomputed — so the manuscript tokens and the
+    mission outcome are the same numbers, not two parallel calculations.
+    """
+    from dr_no.canonical import canonical_metrics
+
+    results = dict(provider.execute(provider.plan(provider.brief())).results)
+    extra = {"steps_planned", "facilities_assessed"}
+    for key in extra:
+        results.pop(key)
+    assert results == canonical_metrics()
+
+
+def test_input_hash_tracks_the_declared_scenario(tmp_path: Path) -> None:
+    """A scenario edit must change the provenance hash.
+
+    A hash that ignored its inputs would certify every run as identical
+    provenance regardless of what was actually run.
+    """
+    import hashlib
+    import json
+
+    from dr_no.canonical import canonical_scenario
+
+    original = (ROOT / "manuscript" / "config.yaml").read_text(encoding="utf-8")
+    edited = tmp_path / "config.yaml"
+    edited.write_text(
+        original.replace("wind_speed_m_s: 3.0", "wind_speed_m_s: 7.5"), encoding="utf-8"
+    )
+    other = hashlib.sha256(
+        json.dumps(canonical_scenario(load_scenario(edited)), sort_keys=True).encode("utf-8")
+    ).hexdigest()[:16]
+    assert other != _input_hash()
 
 
 def test_execute_deterministic(provider: DrNoProvider) -> None:
@@ -118,10 +157,9 @@ def test_full_mission_flow(provider: DrNoProvider) -> None:
     assert "top_isotope" in debrief.outcome.results
 
 
-def test_detector_energies_shape() -> None:
-    energies = _detector_energies()
-    assert energies.size == 1200
-    assert energies.min() >= 20.0
+def test_seed_comes_from_declared_scenario() -> None:
+    """The provenance seed is the config-declared seed, not a Python literal."""
+    assert _seed() == load_scenario().seed
 
 
 def test_input_hash_is_stable() -> None:

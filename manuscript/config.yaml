@@ -3,9 +3,11 @@
 # the fork contract but carries no DOI/remote fields (there is no online release).
 
 paper:
+  # `version` is the package version of record: pyproject.toml [project].version
+  # and dr_no.__version__ must agree with it (tests/test_version_identity.py).
   title: "Dr. No: CRAB KEY — Special-Agent Mission Software"
-  subtitle: "Gamma-Spectrum Isotope Identification, Plume Dispersion, and Island Threat Assessment"
-  version: "0.1.0"
+  subtitle: "Gamma-Ray Forensics, Decay Projection, Shielding, and Island Threat Assessment"
+  version: "0.3.0"
   date: "2026-08-04"
 
 authors:
@@ -18,6 +20,11 @@ authors:
 keywords:
   - "gamma-ray spectroscopy"
   - "isotope identification"
+  - "energy calibration"
+  - "minimum detectable activity"
+  - "Bateman decay chains"
+  - "gamma-ray shielding"
+  - "radiation dose assessment"
   - "radiological dispersion"
   - "Gaussian plume model"
   - "Pasquill-Gifford stability classes"
@@ -32,7 +39,15 @@ testing:
   max_test_failures: 0
   max_project_test_failures: 0
 
-# Deterministic mission scenario consumed by the CRAB KEY provider core.
+# Deterministic mission scenario. THIS BLOCK IS THE SOURCE OF TRUTH: it is read
+# by src/dr_no/scenario.py and consumed by canonical.py (metrics), figures/plots.py
+# (figures), and manuscript_variables.py (tokens). No scenario constant is
+# re-declared in Python. Editing a value here moves the computation, the figures,
+# and the manuscript together — tests/test_scenario.py pins that binding.
+#
+# NOTE: write floats in full (2000000.0) or with a signed exponent (2.0e+6).
+# PyYAML's YAML 1.1 resolver parses bare `2.0e6` as a STRING; the loader rejects
+# that rather than silently coercing it.
 mission:
   codename: "CRAB KEY"
   seed: 42
@@ -43,9 +58,47 @@ mission:
     energy_min_keV: 20.0
     energy_max_keV: 3000.0
     bins: 1200
+  # The shielded source mixture placed in front of the detector (Bq).
+  source_activities_bq:
+    Cs-137: 2000000.0
+    Co-60: 800000.0
+  # Known photopeak energies (keV) used for the channel->energy calibration.
+  calibration_lines_keV: [661.66, 1173.24, 1332.50]
+  # The emission line the report quantifies (net area + Currie MDA).
+  quantified_line: "Cs-137"
   plume:
     source_Q_bq_s: 400000.0
     wind_speed_m_s: 3.0
     stability: "D"
     release_height_m: 10.0
+  # Time-projection of the release for the follow-up-mission correction.
+  decay_projection:
+    chain: "I-131/Xe-131m"
+    elapsed_days: 7.0
+  # The barrier the report engineers against.
+  shielding_probe:
+    material: "lead"
+    thickness_cm: 5.0
+    hvl_energy_MeV: 0.662
+    tvl_material: "concrete"
+    tvl_energy_MeV: 1.332
+  # The external point-source dose the report quotes.
+  external_dose_probe:
+    isotope: "Co-60"
+    distance_m: 100.0
+  # Facilities detected on the island (positions are source-referenced).
+  facilities:
+    - name: "north_dock"
+      x_m: 500.0
+      y_m: 20.0
+      containment: "breached"
+      isotopes:
+        Cs-137: 2000000.0
+        Co-60: 800000.0
+    - name: "guano_cave"
+      x_m: 1500.0
+      y_m: -40.0
+      containment: "contained"
+      isotopes:
+        I-131: 10000000.0
   action_concentration_bq_m3: 1000.0
