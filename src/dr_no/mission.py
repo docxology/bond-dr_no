@@ -2,19 +2,22 @@
 
 This is the only module that may import ``bond_api``. The pure domain core
 (:mod:`dr_no.isotope_profiles`, :mod:`dr_no.plume_model`,
-:mod:`dr_no.island_assessment`) stays protocol-free so it remains importable
-and testable standalone.
+:mod:`dr_no.island_assessment`, :mod:`dr_no.decay_chain`,
+:mod:`dr_no.spectrum_processing`, :mod:`dr_no.shielding`,
+:mod:`dr_no.dose_assessment`, and the shared :mod:`dr_no.canonical` metric
+source) stays protocol-free so it remains importable and testable standalone.
 
 It implements the FROZEN :class:`bond_api.protocol.MissionProvider` contract
 and registers a set of CRAB KEY gadgets with the
-:class:`bond_api.registry.GadgetRegistry` at import time.
+:class:`bond_api.registry.GadgetRegistry` at import time. Its public shape is
+fixed: top-level ``MissionProvider`` and the module-level ``GADGETS`` mapping.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 from bond_api.protocol import (  # type: ignore[import-untyped]
@@ -33,97 +36,46 @@ from bond_api.protocol import (  # type: ignore[import-untyped]
 from bond_api.registry import GadgetRegistry, MissionRegistry  # type: ignore[import-untyped]
 
 from dr_no import __version__
-from dr_no.island_assessment import (
-    INHALATION_DCF_SV_BQ,
-    THREAT_LEVELS,
-    DetectedFacility,
-    Meteorology,
-    assess_island,
-)
-from dr_no.isotope_profiles import (
-    detect_peaks,
-    identify_isotopes,
-    isotope_library,
-    library_names,
-    synthesize_spectrum,
-)
-from dr_no.plume_model import STABILITY_CLASSES, find_ground_level_max
+from dr_no.canonical import canonical_metrics, canonical_scenario, detector_energy_grid
+from dr_no.decay_chain import decay_chains
+from dr_no.dose_assessment import GAMMA_CONSTANT_MSV_M2_H_GBQ, INHALATION_DCF_SV_BQ
+from dr_no.island_assessment import THREAT_LEVELS
+from dr_no.isotope_profiles import isotope_library, library_names
+from dr_no.plume_model import STABILITY_CLASSES
+from dr_no.shielding import MATERIALS
 
 __all__ = ["MissionProvider"]
 
 _PACKAGE_VERSION = __version__
 _SEED = 42
 
-# Deterministic scenario used by the execute stage (typed so mypy can follow it).
-_SPECTRUM: dict[str, float] = {"Cs-137": 2.0e6, "Co-60": 8.0e5}
-_DETECTOR: dict[str, float] = {
-    "acquisition_time_s": 60.0,
-    "detector_efficiency": 0.01,
-    "resolution_at_1332": 2.0,
-}
-_PLUME: dict[str, float | str] = {
-    "source_Q": 4.0e5,
-    "wind_speed_m_s": 3.0,
-    "stability": "D",
-    "release_height_m": 10.0,
-}
-_FACILITIES: list[dict[str, object]] = [
-    {
-        "name": "north_dock",
-        "x_m": 500.0,
-        "y_m": 20.0,
-        "isotopes": {"Cs-137": 2.0e6, "Co-60": 8.0e5},
-        "containment": "breached",
-    },
-    {
-        "name": "guano_cave",
-        "x_m": 1500.0,
-        "y_m": -40.0,
-        "isotopes": {"I-131": 1.0e7},
-        "containment": "contained",
-    },
-]
-
-
-def _scenario_payload() -> dict[str, object]:
-    """The full scenario as a JSON-safe mapping (used for the provenance hash)."""
-    return {
-        "spectrum": _SPECTRUM,
-        "detector": _DETECTOR,
-        "plume": _PLUME,
-        "facilities": _FACILITIES,
-    }
-
 
 def _input_hash() -> str:
-    """Stable fingerprint of the scenario for provenance."""
+    """Stable fingerprint of the canonical scenario for provenance."""
     return hashlib.sha256(
-        json.dumps(_scenario_payload(), sort_keys=True).encode("utf-8")
+        json.dumps(canonical_scenario(), sort_keys=True).encode("utf-8")
     ).hexdigest()[:16]
 
 
 def _detector_energies() -> np.ndarray:
-    return np.linspace(20.0, 3000.0, 1200)
+    """The canonical detector energy grid (keV)."""
+    return detector_energy_grid()
 
 
-def _source_Q() -> float:
-    return float(_PLUME["source_Q"])
+def _detector_payload() -> dict[str, float]:
+    return cast("dict[str, float]", canonical_scenario()["detector"])
 
 
-def _wind_speed() -> float:
-    return float(_PLUME["wind_speed_m_s"])
+def _spectrum_payload() -> dict[str, float]:
+    return cast("dict[str, float]", canonical_scenario()["spectrum"])
 
 
-def _stability() -> str:
-    return str(_PLUME["stability"])
+def _plume_payload() -> dict[str, float | str]:
+    return cast("dict[str, float | str]", canonical_scenario()["plume"])
 
 
-def _release_height() -> float:
-    return float(_PLUME["release_height_m"])
-
-
-def _facility_isotopes(entry: dict[str, object]) -> dict[str, float]:
-    return cast("dict[str, float]", entry["isotopes"])
+def _facilities() -> list[dict[str, object]]:
+    return cast("list[dict[str, object]]", canonical_scenario()["facilities"])
 
 
 class MissionProvider:
@@ -132,12 +84,14 @@ class MissionProvider:
     film = "dr_no"
 
     def brief(self) -> MissionBrief:
-        """Declare the CRAB KEY mission: isotope forensics, plume, island risk."""
+        """Declare the CRAB KEY mission: isotope forensics, dispersion, threat."""
+        scenario = canonical_scenario()
         return MissionBrief(
             film=self.film,
             codename="CRAB KEY",
             objectives=(
                 "identify gamma-emitting isotopes from a measured spectrum",
+                "quantify, time-project, and shield against the radiological source",
                 "model radioactive plume dispersion under local meteorology",
                 "assess island-wide radiological threat and containment actions",
             ),
@@ -147,18 +101,21 @@ class MissionProvider:
                     name="canonical",
                     payload={"count": len(isotope_library())},
                 ),
-                Asset(kind="detector", name="hpge", payload=_DETECTOR),
-                Asset(kind="meteorology", name="plume", payload=_PLUME),
+                Asset(kind="decay-chains", name="bateman", payload={"count": len(decay_chains())}),
+                Asset(kind="detector", name="hpge", payload=scenario["detector"]),
+                Asset(kind="meteorology", name="plume", payload=scenario["plume"]),
             ),
             constraints=(
                 Constraint(
                     kind="determinism", detail="no random draws; fixed scenario, fixed seed"
                 ),
+                Constraint(kind="sources", detail="real gamma-line, dose, and attenuation data"),
             ),
         )
 
     def recon(self, request: ReconRequest) -> ReconReport:
-        """Survey the threat surface: library, dispersion model, island geometry."""
+        """Survey the threat surface: library, chains, dispersion, shielding."""
+        detector = _detector_payload()
         return ReconReport(
             findings=(
                 Finding(label="goal", detail=request.goal),
@@ -166,81 +123,43 @@ class MissionProvider:
                     label="isotope-library", detail=f"{len(isotope_library())} isotopes catalogued"
                 ),
                 Finding(
+                    label="decay-chains", detail=f"{len(decay_chains())} parent/daughter chains"
+                ),
+                Finding(
                     label="detector",
                     detail="HPGe synthesis resolved at "
-                    f"{float(_DETECTOR['resolution_at_1332'])} keV",
+                    f"{float(detector['resolution_at_1332'])} keV",
                 ),
                 Finding(label="stability-classes", detail=", ".join(STABILITY_CLASSES)),
                 Finding(label="threat-bands", detail=", ".join(THREAT_LEVELS)),
+                Finding(label="shielding-materials", detail=", ".join(MATERIALS)),
             )
         )
 
     def plan(self, brief: MissionBrief) -> MissionPlan:
-        """Plan the four deterministic stages of a CRAB KEY assessment."""
+        """Plan the full deterministic assessment pipeline."""
         return MissionPlan(
             steps=(
-                Step(name="spectrum", action="synthesize_spectrum", params=_SPECTRUM),
-                Step(name="identify", action="identify_isotopes", params={"peaks": "detected"}),
-                Step(name="plume", action="model_dispersion", params=_PLUME),
+                Step(name="spectrum", action="synthesize_spectrum", params=_detector_payload()),
+                Step(name="identify", action="identify_isotopes", params=_spectrum_payload()),
+                Step(name="quantify", action="calibrate_and_mda", params={"line": "Cs-137"}),
+                Step(name="decay", action="project_activity", params={"chain": "I-131/Xe-131m"}),
+                Step(name="shield", action="assess_shielding", params={"material": "lead"}),
+                Step(name="plume", action="model_dispersion", params=_plume_payload()),
                 Step(
-                    name="assess", action="assess_island", params={"facilities": len(_FACILITIES)}
+                    name="assess", action="assess_island", params={"facilities": len(_facilities())}
                 ),
             )
         )
 
     def execute(self, plan: MissionPlan) -> MissionOutcome:
-        """Run the CRAB KEY pipeline deterministically and capture its results."""
-        energies = _detector_energies()
-        spectrum = _SPECTRUM
-        detector = _DETECTOR
-        _, counts = synthesize_spectrum(
-            spectrum,
-            energies=energies,
-            acquisition_time_s=float(detector["acquisition_time_s"]),
-            detector_efficiency=float(detector["detector_efficiency"]),
-            resolution_at_1332=float(detector["resolution_at_1332"]),
-        )
-        peaks = detect_peaks(energies, counts, background_level=50.0)
-        identifications = identify_isotopes(peaks)
-
-        max_plume = find_ground_level_max(
-            500.0,
-            Q=_source_Q(),
-            u=_wind_speed(),
-            stability=_stability(),
-            H=_release_height(),
-        )
-
-        facilities = [
-            DetectedFacility(
-                name=str(f["name"]),
-                x_m=float(cast("float", f["x_m"])),
-                y_m=float(cast("float", f["y_m"])),
-                isotope_activities=_facility_isotopes(f),
-                containment=str(f["containment"]),
-            )
-            for f in _FACILITIES
-        ]
-        meteo = Meteorology(
-            wind_speed_m_s=_wind_speed(),
-            stability=_stability(),
-            release_height_m=_release_height(),
-        )
-        assessment = assess_island(facilities, meteo, source_Q=_source_Q())
-
-        results = {
-            "detected_peaks": len(peaks),
-            "identified_isotopes": [i.isotope for i in identifications],
-            "top_isotope": identifications[0].isotope if identifications else None,
-            "peak_concentration_bq_m3": max_plume.max_concentration,
-            "island_threat": assessment.overall_level,
-            "downwind_extent_m": assessment.downwind_contamination_m,
-            "steps_planned": len(plan.steps),
-            "facilities_assessed": len(facilities),
-        }
+        """Run the full CRAB KEY pipeline deterministically and capture its results."""
+        metrics: dict[str, Any] = canonical_metrics()
+        metrics["steps_planned"] = len(plan.steps)
+        metrics["facilities_assessed"] = int(metrics["num_facilities"])
         return MissionOutcome(
             success=True,
-            results=results,
+            results=metrics,
             provenance=Provenance(
                 package_version=_PACKAGE_VERSION,
                 seed=_SEED,
@@ -255,8 +174,9 @@ class MissionProvider:
             outcome=outcome,
             lessons=(
                 "isotope identification must use a real gamma-line library, never guesswork",
-                "dispersion and dose are computed with fixed physics, no randomness",
-                "a breached containment escalates a facility's threat band",
+                "a calibrated spectrum and Currie MDA bound what is actually detectable",
+                "transient-equilibrium decay changes activity on mission timescales",
+                "shielding attenuates exponentially; a breached containment escalates threat",
             ),
         )
 
@@ -268,6 +188,9 @@ GADGETS: dict[str, object] = {
     "inhalation_dcf": INHALATION_DCF_SV_BQ,
     "threat_levels": THREAT_LEVELS,
     "library_names": library_names,
+    "decay_chains": decay_chains,
+    "shielding_materials": MATERIALS,
+    "specific_gamma_constants": GAMMA_CONSTANT_MSV_M2_H_GBQ,
 }
 
 _PROVIDER = MissionProvider()

@@ -23,10 +23,14 @@ reproducible byte-for-byte.
 
 ## 6.3 Artifacts
 
-* Domain core: `src/dr_no/isotope_profiles.py`, `src/dr_no/plume_model.py`,
-  `src/dr_no/island_assessment.py`.
+* Domain core: `src/dr_no/isotope_profiles.py`, `src/dr_no/spectrum_processing.py`,
+  `src/dr_no/decay_chain.py`, `src/dr_no/shielding.py`,
+  `src/dr_no/dose_assessment.py`, `src/dr_no/plume_model.py`,
+  `src/dr_no/island_assessment.py`, and the shared metric source
+  `src/dr_no/canonical.py`.
 * Mission adapter: `src/dr_no/mission.py`.
-* Figures: `output/figures/gamma_spectrum.png`, `output/figures/plume_field.png`.
+* Figures: `output/figures/gamma_spectrum.png`,
+  `output/figures/plume_field.png`, `output/figures/decay_curves.png`.
 * Manuscript variables: `output/data/manuscript_variables.json`.
 
 Environment: Python {{PYTHON_VERSION}}, numpy {{NUMPY_VERSION}}, generated

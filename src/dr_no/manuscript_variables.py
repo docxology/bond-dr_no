@@ -21,6 +21,9 @@ from typing import Any
 import yaml
 
 from dr_no import CODENAME, FILM
+from dr_no.canonical import canonical_metrics
+from dr_no.decay_chain import chain_names, decay_chains, lookup_chain
+from dr_no.dose_assessment import specific_gamma_constant
 from dr_no.isotope_profiles import library_names, total_gamma_lines
 from dr_no.plume_model import STABILITY_CLASSES
 
@@ -63,6 +66,9 @@ def generate_variables(
     library = library_names()
     if require_outputs and not library:
         raise ValueError("isotope library is empty — dr_no failed to expose its isotopes")
+    metrics = canonical_metrics()
+    chains = decay_chains()
+    i131 = lookup_chain("I-131/Xe-131m").members[0]
     return {
         "DRNO_TITLE": str(paper.get("title", "")),
         "DRNO_SUBTITLE": str(paper.get("subtitle", "")),
@@ -71,6 +77,18 @@ def generate_variables(
         "DRNO_CODENAME": CODENAME,
         "NUM_ISOTOPES": str(len(library)),
         "NUM_GAMMA_LINES": str(total_gamma_lines()),
+        "NUM_DECAY_CHAINS": str(len(chains)),
+        "DECAY_CHAIN_NAMES_CSV": ", ".join(chain_names()),
+        "I131_HALF_LIFE_DAYS": f"{i131.half_life_s / 86400.0:.2f}",
+        "I131_FRACTION_7D_PCT": f"{float(metrics['i131_fraction_7d']) * 100.0:.1f}",
+        "CALIBRATION_R2": f"{float(metrics['calibration_r2']):.4f}",
+        "CALIBRATION_GAIN": f"{float(metrics['calibration_gain_kev_per_ch']):.3f}",
+        "MDA_CS137_BQ": f"{float(metrics['mda_cs137_bq']):.1f}",
+        "HVL_LEAD_662_CM": f"{float(metrics['hvl_lead_662_cm']):.3f}",
+        "TVL_CONCRETE_1332_CM": f"{float(metrics['tvl_concrete_1332_cm']):.2f}",
+        "TRANSMISSION_LEAD_5CM_662_PCT": f"{float(metrics['transmission_lead_5cm_662']) * 100.0:.2f}",
+        "EXTERNAL_DOSE_100M_MSV_H": f"{float(metrics['external_dose_100m_msv_h']):.2e}",
+        "GAMMA_CONSTANT_CO60": f"{specific_gamma_constant('Co-60'):.3f}",
         "NUM_STABILITY_CLASSES": str(len(STABILITY_CLASSES)),
         "STABILITY_CLASSES_CSV": ", ".join(STABILITY_CLASSES),
         "NUMPY_VERSION": _import_version("numpy"),

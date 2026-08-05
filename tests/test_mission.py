@@ -53,8 +53,9 @@ def test_brief(provider: DrNoProvider) -> None:
     assert isinstance(brief, MissionBrief)
     assert brief.film == "dr_no"
     assert brief.codename == "CRAB KEY"
-    assert len(brief.objectives) == 3
-    assert len(brief.assets) == 3
+    assert len(brief.objectives) == 4
+    assert len(brief.assets) == 4
+    assert len(brief.constraints) == 2
 
 
 def test_recon(provider: DrNoProvider) -> None:
@@ -68,7 +69,7 @@ def test_plan(provider: DrNoProvider) -> None:
     plan = provider.plan(provider.brief())
     assert isinstance(plan, MissionPlan)
     names = [step.name for step in plan.steps]
-    assert names == ["spectrum", "identify", "plume", "assess"]
+    assert names == ["spectrum", "identify", "quantify", "decay", "shield", "plume", "assess"]
 
 
 def test_execute(provider: DrNoProvider) -> None:
@@ -82,9 +83,18 @@ def test_execute(provider: DrNoProvider) -> None:
     assert results["top_isotope"] in ("Cs-137", "Co-60")
     assert results["island_threat"] in ("LOW", "MODERATE", "HIGH", "SEVERE", "CRITICAL")
     assert results["downwind_extent_m"] >= 0
-    assert results["steps_planned"] == 4
+    assert results["steps_planned"] == 7
+    assert results["facilities_assessed"] == 2
     assert "Cs-137" in results["identified_isotopes"]
     assert "Co-60" in results["identified_isotopes"]
+    # Deepened quantification, decay, shielding, and dose metrics.
+    assert results["calibration_r2"] > 0.99
+    assert results["mda_cs137_bq"] > 0
+    assert 0 < results["i131_fraction_7d"] < 1
+    assert results["hvl_lead_662_cm"] > 0
+    assert 0 < results["transmission_lead_5cm_662"] <= 1
+    assert results["external_dose_100m_msv_h"] > 0
+    assert results["net_area_cs137"] > 0
 
 
 def test_execute_deterministic(provider: DrNoProvider) -> None:
@@ -132,9 +142,13 @@ def test_gadgets_registered() -> None:
         "inhalation_dcf",
         "threat_levels",
         "library_names",
+        "decay_chains",
+        "shielding_materials",
+        "specific_gamma_constants",
     ):
         assert GADGET_REGISTRY.contains("dr_no", gadget)
     assert callable(GADGETS["isotope_library"])
+    assert len(GADGETS) == 8
 
 
 def test_provider_accessible_from_registry(provider: DrNoProvider) -> None:

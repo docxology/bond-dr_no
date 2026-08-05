@@ -1,12 +1,15 @@
 # Conclusion
 
 The CRAB KEY package converts a compact radiological question — what is on
-Crab Key, where is it going, and how dangerous is it — into three deterministic
-models that an agent can run, trust, and reproduce. Isotope identification
-rests on a real emission-line library rather than guesswork; plume dispersion
-uses the standard Gaussian model with the full set of Pasquill–Gifford
-stability classes; and island assessment turns the resulting concentrations
-into an actionable threat band and containment posture.
+Crab Key, where is it going, and how dangerous is it — into a set of
+deterministic models that an agent can run, trust, and reproduce. Isotope
+identification rests on a real emission-line library rather than guesswork;
+spectrum quantification bounds what is actually measurable; radioactive-decay
+chains correct activities for mission elapsing time; and shielding-and-dose
+models turn a source inventory into an engineerable containment answer. Plume
+dispersion uses the standard Gaussian model with the full set of
+Pasquill–Gifford stability classes, and island assessment turns the resulting
+concentrations into an actionable threat band and containment posture.
 
 The package is exposed through the frozen BOND-API mission protocol, so the
 orchestrator can discover it by slug (`dr_no`) and drive all five mission

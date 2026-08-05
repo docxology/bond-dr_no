@@ -39,11 +39,21 @@ uv run python scripts/z_generate_manuscript_variables.py   # hydrate {{TOKEN}}s
 
 - `src/dr_no/isotope_profiles.py` — gamma-spectrum isotope identification
   (real 10-isotope library, detector synthesis, peak detection, identification).
+- `src/dr_no/spectrum_processing.py` — energy calibration, net photopeak area,
+  Currie MDA.
+- `src/dr_no/decay_chain.py` — Bateman decay chains over five real parent↔
+  daughter pairs; transient equilibrium; fraction-remaining.
+- `src/dr_no/shielding.py` — exponential attenuation (real mass-attenuation
+  tables: lead/iron/concrete/water), HVL/TVL, required thickness.
+- `src/dr_no/dose_assessment.py` — external (Γ + inverse-square), inhalation,
+  combined, integrated dose.
 - `src/dr_no/plume_model.py` — Gaussian plume dispersion (Pasquill–Gifford A–F).
 - `src/dr_no/island_assessment.py` — dose-rate, threat bands, containment,
   island aggregation.
+- `src/dr_no/canonical.py` — **single-source-of-truth** scenario + metrics;
+  consumed by BOTH `mission.execute()` results and manuscript `{{TOKEN}}`s.
 - `src/dr_no/mission.py` — the ONLY module importing `bond_api`; exposes
-  `MissionProvider` (slug `dr_no`) and registers gadgets.
+  `MissionProvider` (slug `dr_no`) and registers 8 gadgets.
 
 ## Pitfalls
 

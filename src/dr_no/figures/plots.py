@@ -22,6 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from dr_no.decay_chain import activities_at_t, lookup_chain
 from dr_no.isotope_profiles import (
     detect_peaks,
     identify_isotopes,
@@ -29,7 +30,7 @@ from dr_no.isotope_profiles import (
 )
 from dr_no.plume_model import grid_concentration
 
-__all__ = ["plot_gamma_spectrum", "plot_plume_field", "render_all"]
+__all__ = ["plot_decay_curves", "plot_gamma_spectrum", "plot_plume_field", "render_all"]
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[3]
 FIGURES_DIR = PACKAGE_ROOT / "output" / "figures"
@@ -108,6 +109,47 @@ def plot_plume_field(
     return path
 
 
+def plot_decay_curves(
+    *,
+    chain_name: str = "I-131/Xe-131m",
+    hours: float = 72.0,
+    initial_activity_bq: float = 1.0e10,
+    output_path: str | Path | None = None,
+) -> Path:
+    """Render parent and daughter activity curves for a two-member decay chain.
+
+    Args:
+        chain_name: a two-member chain from ``decay_chain.decay_chains()``.
+        hours: horizontal span of the plot.
+        initial_activity_bq: the parent's initial activity (Bq).
+        output_path: destination PNG path (default ``output/figures/decay_curves.png``).
+    """
+    path = Path(output_path) if output_path is not None else _figure_path("decay_curves.png")
+    chain = lookup_chain(chain_name)
+    hours_arr = np.linspace(0.0, hours, 200)
+    parent_name = chain.members[0].name
+    daughter_name = chain.members[1].name
+    parent_act: list[float] = []
+    daughter_act: list[float] = []
+    for h in hours_arr:
+        acts = activities_at_t(chain, initial_activity_bq, h * 3600.0)
+        parent_act.append(acts[0])
+        daughter_act.append(acts[1])
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.plot(hours_arr, parent_act, color="#1e3a8a", label=parent_name)
+    ax.plot(hours_arr, daughter_act, color="#dc2626", label=daughter_name)
+    ax.set_xlabel("Elapsed time (h)")
+    ax.set_ylabel("Activity (Bq)")
+    ax.set_title(f"CRAB KEY decay chain — {chain_name}")
+    ax.legend()
+    ax.set_yscale("log")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
 def render_all() -> list[Path]:
     """Render every CRAB KEY figure; returns the written paths."""
-    return [plot_gamma_spectrum(), plot_plume_field()]
+    return [plot_gamma_spectrum(), plot_plume_field(), plot_decay_curves()]

@@ -15,9 +15,10 @@ behavioural rules in `docs/agent_instructions.md`, the architecture contract in
 
 | Surface | Rule |
 | --- | --- |
-| `src/dr_no/isotope_profiles.py`, `plume_model.py`, `island_assessment.py` | Pure domain: no `bond_api`, no `infrastructure` imports. |
-| `src/dr_no/mission.py` | The **only** module that imports `bond_api`; thin adapter over the domain core. |
-| `src/dr_no/manuscript_variables.py` | Token hydration from `manuscript/config.yaml` + live domain surface. |
+| `src/dr_no/isotope_profiles.py`, `plume_model.py`, `island_assessment.py`, `spectrum_processing.py`, `decay_chain.py`, `shielding.py`, `dose_assessment.py`, `canonical.py` | Pure domain: no `bond_api`, no `infrastructure` imports. |
+| `src/dr_no/mission.py` | The mission adapter (imports `bond_api`); thin adapter over the domain core and `canonical` metrics. |
+| `src/dr_no/cli.py` | Thin phase driver; imports `bond_api` only to run the mission flow. |
+| `src/dr_no/manuscript_variables.py` | Token hydration from `manuscript/config.yaml` + the live `canonical_metrics()` surface. |
 | `scripts/` | Thin CLI wrappers; business logic stays in `src/`. |
 
 The domain core must remain importable **without** bond-api (fallback if the

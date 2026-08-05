@@ -15,3 +15,19 @@ claims:
     claim: "src/ coverage >= 90% line and branch, no mocks"
     source: "docs/_generated/COUNTS.md"
     verified: true
+  - id: "decay-chain-count"
+    claim: "five real Bateman parent-daughter decay chains with transient equilibrium"
+    source: "src/dr_no/decay_chain.py::decay_chains"
+    verified: true
+  - id: "currie-mda"
+    claim: "minimum detectable activity via Currie L_D = 2.71 + 4.65 sqrt(B)"
+    source: "src/dr_no/spectrum_processing.py::minimum_detectable_activity"
+    verified: true
+  - id: "shielding-materials"
+    claim: "real mass-attenuation tables for lead, iron, concrete, water (0.1-2.0 MeV)"
+    source: "src/dr_no/shielding.py::MASS_ATTENUATION_CM2_G"
+    verified: true
+  - id: "single-source-metrics"
+    claim: "mission results and manuscript tokens both derive from canonical_metrics()"
+    source: "src/dr_no/canonical.py::canonical_metrics"
+    verified: true

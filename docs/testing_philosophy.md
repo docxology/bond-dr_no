@@ -28,8 +28,13 @@ Zero-mock, real-data, deterministic testing.
 | File | Covers |
 | --- | --- |
 | `test_isotope_profiles.py` | isotope library, synthesis, peak detection, identification |
+| `test_spectrum_processing.py` | energy calibration, net area, Currie MDA |
+| `test_decay_chain.py` | Bateman decay chains, equilibrium, time projection |
+| `test_shielding.py` | attenuation, transmission, HVL/TVL, required thickness |
+| `test_dose_assessment.py` | external/inhalation/combined/integrated dose |
 | `test_plume_model.py` | dispersion coefficients, concentration, isopleth |
 | `test_island_assessment.py` | dose rate, threat bands, containment, aggregation |
+| `test_canonical.py` | single-source-of-truth canonical metrics |
 | `test_mission.py` | BOND-API provider: protocol, flow, registers, discovery |
 | `test_manuscript_variables.py` | token hydration + live `{{TOKEN}}` cross-reference gate |
 | `test_cli.py` | in-process CLI phase driver coverage |

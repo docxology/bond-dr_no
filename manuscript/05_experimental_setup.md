@@ -9,6 +9,12 @@ All results derive from the deterministic CRAB KEY scenario declared in
   resolution anchor 2.0 keV FWHM at 1332.5 keV, energy grid 20–3000 keV.
 * **Isotope library**: {{NUM_ISOTOPES}} isotopes / {{NUM_GAMMA_LINES}} lines.
 * **Source mixture**: Cs-137 ($2.0\times10^6$ Bq) plus Co-60 ($8.0\times10^5$ Bq).
+* **Decay chains**: {{NUM_DECAY_CHAINS}} Bateman chains
+  ({{DECAY_CHAIN_NAMES_CSV}}); I-131 projected 7 days after release.
+* **Quantification**: energy calibration against the Cs-137 / Co-60
+  photopeaks; Currie MDA at the Cs-137 line.
+* **Shielding**: lead/concrete/iron/water mass-attenuation tables (0.1–2.0 MeV)
+  interpolated log-log.
 * **Plume**: release $4.0\times10^5$ Bq/s, wind 3 m/s, stability class D,
   release height 10 m; contamination action threshold 1000 Bq/m³.
 * **Facilities**: two — a breached dock compound and a contained load-out cave.

@@ -5,7 +5,8 @@ island, each carrying a measured inventory of gamma-emitting isotopes, plus the
 local meteorology and a presumed radiological source, this module:
 
 * converts airborne contaminant concentrations into an inhaled dose rate using
-  per-isotope inhalation dose coefficients (breathing-rate weighted);
+  per-isotope inhalation dose coefficients (breathing-rate weighted) — the
+  dose models live in :mod:`dr_no.dose_assessment` and are re-exported here;
 * maps that dose rate — together with each facility's containment status and its
   isotope hazard — onto a five-level threat band;
 * aggregates per-facility risks into an island-wide assessment; and
@@ -21,6 +22,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from dr_no.dose_assessment import (
+    INHALATION_DCF_SV_BQ,
+    dose_rate_from_concentration,
+)
 from dr_no.plume_model import gaussian_plume_concentration, isopleth_extent
 
 __all__ = [
@@ -39,24 +44,6 @@ __all__ = [
 THREAT_LEVELS = ("LOW", "MODERATE", "HIGH", "SEVERE", "CRITICAL")
 #: Rank used for ordering threat levels (higher = worse).
 THREAT_RANK: dict[str, int] = {level: i for i, level in enumerate(THREAT_LEVELS)}
-
-#: Inhalation committed effective dose coefficients, Sv/Bq (representative
-#: public values). Higher is more radiotoxic by inhalation.
-INHALATION_DCF_SV_BQ: dict[str, float] = {
-    "Cs-137": 4.6e-9,
-    "I-131": 7.4e-9,
-    "Co-60": 1.0e-8,
-    "Na-22": 2.0e-9,
-    "Am-241": 9.6e-6,
-    "Ba-133": 7.4e-10,
-    "K-40": 3.0e-9,
-    "Tl-208": 8.2e-9,
-    "U-235": 5.6e-6,
-    "Eu-152": 2.0e-9,
-}
-
-#: Default adult breathing rate, m^3/s (~1.2 m^3/h at light activity).
-BREATHING_RATE_M3_S = 1.2 / 3600.0
 
 #: Threat-level dose-rate thresholds, Sv/s (effective dose rate).
 _DOSE_THRESHOLDS_SV_S: tuple[float, ...] = (1.0e-11, 1.0e-9, 1.0e-7, 1.0e-5)
@@ -94,41 +81,6 @@ class Meteorology:
     wind_speed_m_s: float
     stability: str  # Pasquill-Gifford class A-F
     release_height_m: float = 0.0
-
-
-def dose_rate_from_concentration(
-    concentration_bq_m3: float,
-    isotope_fractions: dict[str, float],
-    *,
-    breathing_rate_m3_s: float = BREATHING_RATE_M3_S,
-) -> float:
-    """Inhaled effective dose rate (Sv/s) from an airborne concentration.
-
-    ``concentration_bq_m3`` is the total airborne activity concentration;
-    ``isotope_fractions`` maps isotope name -> fraction of that total it
-    represents. The dose rate is the sum over isotopes of
-    ``conc * fraction * DCF * breathing_rate``.
-
-    Args:
-        concentration_bq_m3: total contaminant concentration (Bq/m^3).
-        isotope_fractions: isotope -> fraction of the total (must sum to ~1).
-        breathing_rate_m3_s: breathing rate (m^3/s) for the exposed person.
-
-    Returns:
-        Effective dose rate in Sv/s (non-negative).
-    """
-    if concentration_bq_m3 < 0:
-        raise ValueError("concentration must be non-negative")
-    if breathing_rate_m3_s <= 0:
-        raise ValueError("breathing rate must be positive")
-    total_frac = sum(isotope_fractions.values())
-    if not isotope_fractions or total_frac <= 0:
-        raise ValueError("isotope_fractions must be non-empty with positive total")
-    rate = 0.0
-    for isotope, fraction in isotope_fractions.items():
-        dcf = INHALATION_DCF_SV_BQ[isotope]
-        rate += concentration_bq_m3 * (fraction / total_frac) * dcf
-    return rate * breathing_rate_m3_s
 
 
 def facility_threat_level(

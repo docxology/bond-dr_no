@@ -60,3 +60,47 @@ The dose rate is mapped onto a five-band threat scale (LOW, MODERATE, HIGH,
 SEVERE, CRITICAL); a facility whose containment is breached is escalated one
 band. The island report records the worst threat and, for each facility, a
 containment action (none / shelter / evacuation).
+
+## 2.4 Radioactive decay chains
+
+A radiological source is not static: a parent nuclide decays into a daughter
+with its own half-life, so activities change on mission timescales. CRAB KEY
+models this with the Bateman solution over {{NUM_DECAY_CHAINS}} real
+parent–daughter chains ({{DECAY_CHAIN_NAMES_CSV}}):
+
+$$ N_k(t) = N_0 \sum_{j=1}^{k}
+   \frac{\prod_{i=1}^{k-1}\lambda_i}{\prod_{i\neq j}^{k}(\lambda_i - \lambda_j)}
+   e^{-\lambda_j t}, \qquad A = \lambda N ,$$
+
+where $\lambda = \ln 2 / T_{1/2}$. The parent activity falls
+exponentially, and a faster-decaying daughter may approach transient
+equilibrium. For the canonical iodine-131 release,
+$T_{1/2} = $ {{I131_HALF_LIFE_DAYS}} d, so after 7 days the I-131 activity is
+{{I131_FRACTION_7D_PCT}}% of its initial value — a decision-relevant
+correction for any follow-up mission.
+
+## 2.5 Spectrum calibration and detection limits
+
+Beyond identifying peaks, the package quantifies them. A least-squares linear
+calibration maps detector channel to energy, returning the calibration gain
+({{CALIBRATION_GAIN}} keV/channel here) and the coefficient of determination
+$R^2$ ({{CALIBRATION_R2}} for the canonical fit). Net photopeak areas are
+computed with a linearly interpolated background and a Poisson-propagated
+uncertainty. The minimum detectable activity follows Currie's formalism,
+
+$$ L_D = 2.71 + 4.65\sqrt{B}, \qquad \mathrm{MDA} = \frac{L_D}{t\,\varepsilon\,I},$$
+
+which bounds what a measurement can actually claim to have seen — for the
+canonical detector the MDA at the Cs-137 line is {{MDA_CS137_BQ}} Bq.
+
+## 2.6 Shielding, attenuation, and external dose
+
+Exponential absorption governs every barrier: $I(x) = I_0 e^{-\mu x}$ with
+$\mu = (\mu/\rho)\,\rho$ from a real mass-attenuation table (lead, iron,
+concrete, water). The half-value layer of lead at the 662 keV Cs-137 line is
+{{HVL_LEAD_662_CM}} cm, and the tenth-value layer of concrete at the 1332 keV
+Co-60 line is {{TVL_CONCRETE_1332_CM}} cm. A {{TRANSMISSION_LEAD_5CM_662_PCT}}%
+transmission fraction survives 5 cm of lead at 662 keV. External dose follows
+the point-source inverse-square law with the specific gamma-ray constant
+($\Gamma_{Co60} = $ {{GAMMA_CONSTANT_CO60}} mSv·m²·h⁻¹·GBq⁻¹), giving an
+unshielded Co-60 dose rate of {{EXTERNAL_DOSE_100M_MSV_H}} mSv/h at 100 m.

@@ -35,3 +35,21 @@ mapped to a threat band, and assigned a containment action. The island report
 records the worst threat level and the recommended containment posture for
 every facility. The assessment is fully deterministic; repeating the mission
 returns a byte-identical report.
+
+## 3.4 Quantitative forensics
+
+Beyond identification, CRAB KEY's canonical run quantifies the source. The
+energy calibration over the detected Cs-137 and Co-60 photopeaks achieves
+$R^2=$ {{CALIBRATION_R2}} at a gain of {{CALIBRATION_GAIN}} keV/channel, and
+the Currie detection limit puts the Cs-137 MDA at {{MDA_CS137_BQ}} Bq — an
+honest floor on what the detector can claim. Time dependence matters: for the
+I-131 component ($T_{1/2}=$ {{I131_HALF_LIFE_DAYS}} d) only
+{{I131_FRACTION_7D_PCT}}% survives 7 days, as [@fig:decay] shows.
+
+![I-131 → Xe-131m parent and daughter activity over 72 h.](../output/figures/decay_curves.png){#fig:decay}
+
+Shielding engineering closes the assessment: the half-value layer of lead at
+662 keV is {{HVL_LEAD_662_CM}} cm and 5 cm of lead transmits only
+{{TRANSMISSION_LEAD_5CM_662_PCT}}% of the 662 keV flux, cutting the unshielded
+Co-60 dose rate of {{EXTERNAL_DOSE_100M_MSV_H}} mSv/h at 100 m
+($\Gamma_{Co60}=$ {{GAMMA_CONSTANT_CO60}} mSv·m²·h⁻¹·GBq⁻¹) accordingly.

@@ -1,26 +1,44 @@
 # CRAB KEY (dr_no) — TODO & integration register
 
-Status: **phase-2 build complete** — pure domain core, BOND-API mission adapter,
-thin CLIs, manuscript, figures, and a zero-mock ≥90% coverage test suite.
+Status: **phase-4 deep improvement complete** — seven domain modules + a
+single-source-of-truth canonical metric layer, a deepened BOND-API mission
+adapter, thin CLIs, manuscript, figures, and a zero-mock ≥90% coverage test
+suite.
 
 ## Built (phase 2)
 
 - `src/dr_no/isotope_profiles.py` — gamma-spectrum isotope identification:
   real 10-isotope emission-line library, detector spectrum synthesis, peak
   detection, energy-window matching, activity estimation.
+- `src/dr_no/spectrum_processing.py` — quantification: least-squares energy
+  calibration (gain/offset/R²), background-subtracted net photopeak areas,
+  Currie minimum-detectable-activity (MDA).
+- `src/dr_no/decay_chain.py` — Bateman radioactive decay chains over five real
+  parent–daughter chains: populations/activities over time, transient
+  equilibrium ratios, fraction-remaining/time-to-fraction.
+- `src/dr_no/shielding.py` — gamma attenuation: real mass-attenuation tables
+  (lead/iron/concrete/water), transmission, half/tenth-value layers, required
+  shield thickness.
+- `src/dr_no/dose_assessment.py` — external point-source dose (specific gamma
+  constant + inverse-square), inhalation dose coefficients, combined and
+  integrated dose.
 - `src/dr_no/plume_model.py` — Gaussian plume dispersion: Pasquill–Gifford
   classes A–F, downwind/crosswind concentration, ground-level max, isopleth
   extent.
 - `src/dr_no/island_assessment.py` — Crab Key threat assessment: inhaled
   dose-rate from plume concentration, five-band threat scoring, containment
   action recommendation, island aggregation.
+- `src/dr_no/canonical.py` — single-source-of-truth canonical scenario and
+  metric computation consumed by both the mission results and manuscript
+  tokens.
 - `src/dr_no/mission.py` — FROZEN `bond_api.MissionProvider` adapter + gadget
   registration.
 - `src/dr_no/manuscript_variables.py` — `{{TOKEN}}` hydration.
-- `src/dr_no/figures/plots.py` — gamma-spectrum and plume-field figures.
+- `src/dr_no/figures/plots.py` — gamma-spectrum, plume-field, and decay-curve
+  figures.
 - `scripts/run_mission.py`, `scripts/z_generate_manuscript_variables.py`.
-- Zero-mock tests, one per concept module + mission + manuscript + CLI +
-  figures + scripts smoke.
+- Zero-mock tests, one per concept module + canonical + mission + manuscript +
+  CLI + figures + scripts smoke.
 
 ## Integration points / declared
 
