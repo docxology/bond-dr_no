@@ -63,7 +63,11 @@ section.** 63 tokens are currently defined, in five groups.
 
 ### Environment
 
-`PYTHON_VERSION`, `NUMPY_VERSION`, `GENERATION_TIMESTAMP`
+`PYTHON_VERSION`, `NUMPY_VERSION`, `SCENARIO_FINGERPRINT`
+
+No token may be derived from the wall clock. `SCENARIO_FINGERPRINT` is the
+provenance stamp — a pure function of the committed scenario — precisely so
+that regeneration stays byte-identical.
 
 ## Adding a metric
 

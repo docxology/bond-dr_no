@@ -143,8 +143,19 @@ on a missing or mistyped key rather than substituting a default, and
   structurally blind to them. Both facts are now gated in-suite by
   [`tests/test_suite_hygiene.py`](tests/test_suite_hygiene.py), which reads the
   suite's own source: an undeclared substitution fails the build.
-- **Deterministic** — fixed declared scenario, no RNG anywhere in `src/`, no
-  wall-clock in any computed metric or in the provenance hash.
+- **Deterministic** — fixed declared scenario, no RNG anywhere in `src/`, and no
+  wall clock anywhere in a persisted artifact: not in a metric, not in the
+  provenance hash, not in the token map, not in a rendered manuscript section.
+  Regenerating the tree writes byte-identical bytes.
+  [`tests/test_regeneration_determinism.py`](tests/test_regeneration_determinism.py)
+  proves it the only way it can be proved — by running the generator twice on
+  the real clock and diffing what it wrote. Provenance is carried by
+  `SCENARIO_FINGERPRINT`, a truncated SHA-256 of the committed scenario, which
+  identifies *what* ran rather than *when*. A `GENERATION_TIMESTAMP` token
+  derived from `datetime.now()` used to be rendered into both the token JSON
+  and §6 of the manuscript, which made this bullet false on every rerun. The
+  only assertion covering it checked that the token existed and was non-empty
+  — which a wall-clock string satisfies forever.
 - **Typed and linted** — ruff and mypy clean on `src/`, `scripts/`, and `tests/`.
 - **Thin orchestrators** — `scripts/` forward argv; logic lives in `src/`.
 - **No hand-authored metrics** — every number in the manuscript arrives as a

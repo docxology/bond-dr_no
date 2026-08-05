@@ -11,8 +11,8 @@ Measured 2026-08-05 on Python 3.14.6 (darwin, arm64), package version 0.3.0.
 
 ## Test suite
 
-- **Tests collected:** 312
-- **Tests passed:** 312
+- **Tests collected:** 318
+- **Tests passed:** 318
 - **Tests failed / skipped:** 0 / 0
 - **Coverage (`src/`, line + branch):** 99.02%
 - **Gate:** `uv run pytest tests/ --cov=src --cov-fail-under=90` (≥90% required)
@@ -43,7 +43,7 @@ omitted from coverage by `pyproject.toml`).
 ## Lint, types, and policy scans
 
 - `uv run ruff check src/ scripts/ tests/` — clean (all checks passed).
-- `uv run ruff format --check src/ scripts/ tests/` — clean (42 files formatted).
+- `uv run ruff format --check src/ scripts/ tests/` — clean (43 files formatted).
 - `uv run mypy src/ scripts/` — clean (no issues in 18 source files).
 - Lineage scan for the exemplar string — **zero** hits outside documentation.
 - Mock-framework scan (`MagicMock`, `mocker.patch`, `unittest.mock`) — **zero**

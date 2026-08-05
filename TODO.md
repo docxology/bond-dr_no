@@ -7,8 +7,8 @@ quantification, Bateman decay projection, shielding attenuation, Gaussian plume
 dispersion, and inhalation dose, to a five-band island threat posture and a
 containment action. It exposes the frozen `bond_api` `MissionProvider` surface
 (slug `dr_no`) and hydrates every manuscript number as a token from one metric
-pass. **Verified state, measured 2026-08-05 on this tree (commit `94a3037`,
-Python 3.14.6, darwin/arm64): 312 tests collected, 312 passed, 0 failed,
+pass. **Verified state, measured 2026-08-05 on this tree (commit `6133ad2`,
+Python 3.14.6, darwin/arm64): 318 tests collected, 318 passed, 0 failed,
 0 skipped; `src/` line+branch coverage 99.02%** (`uv run pytest tests/
 --cov=src --cov-report=term-missing`). Ruff check, ruff format --check, and
 mypy on `src/` + `scripts/` are all clean in the same session, and the
@@ -144,7 +144,7 @@ this tree, so this may legitimately close at the suite level rather than here.
 
 **D1. `docs/_generated/COUNTS.md` says "generated" and is written by hand.**
 Its header instructs a human to re-run the gate and transcribe the numbers. It
-is currently accurate (its 312/99.02% matches this session's run), which is
+is currently accurate (its 318/99.02% matches this session's run), which is
 exactly how a manual step stays invisible until the day it does not.
 *Done when:* a script — `scripts/z_generate_counts.py`, alongside the two
 existing thin CLIs — writes the file from `coverage json` output plus the pytest
@@ -201,11 +201,15 @@ contract confines protocol imports to `mission.py`/`cli.py` — keep it there; a
 (b) `record_provenance_outcome` defaults `started_at` to
 `datetime.now(timezone.utc)` (`mission_io.py:189`), so the `now=`/`started_at=`
 overrides **must** be passed explicitly or it will break this package's
-"no wall-clock in any computed metric or provenance hash" guarantee
-(`README.md:146-147`). Acceptance: outcome persistence goes through
-`record_provenance_outcome`, the local `_input_hash` helper is dropped, and
-`tests/test_mission.py:165::test_input_hash_is_stable` is replaced by a test
-that runs `execute()` twice and asserts byte-identical records.
+no-wall-clock-in-any-persisted-artifact guarantee (`README.md`, "Deterministic"
+bullet). `_input_hash()` now delegates to
+`dr_no.canonical.scenario_fingerprint()`, which is also the source of the
+manuscript's `SCENARIO_FINGERPRINT` token — if the local helper is dropped, the
+delegation must survive so the two cannot drift. Acceptance: outcome
+persistence goes through `record_provenance_outcome`,
+`tests/test_mission.py::test_input_hash_is_stable` is replaced by a test that
+runs `execute()` twice and asserts byte-identical records, and
+`tests/test_regeneration_determinism.py` still passes unchanged.
 
 ---
 
@@ -268,6 +272,12 @@ path-scoped to this directory.
 - Never introduce a mock framework or non-determinism; substitutions are
   inventoried by `tests/test_suite_hygiene.py` and an undeclared one fails the
   build.
+- Never derive a token, metric, or provenance field from the wall clock. A
+  `GENERATION_TIMESTAMP` built from `datetime.now()` falsified the package's
+  byte-identical-regeneration claim for several releases while a clock-freezing
+  test reported it safe (fixed 2026-08-05). Use
+  `dr_no.canonical.scenario_fingerprint()` for provenance;
+  `tests/test_regeneration_determinism.py` regenerates twice and diffs bytes.
 - Never hand-author a metric in manuscript prose — every number arrives as a
   token.
 - Never let a failure path return a plausible-looking number.
@@ -281,11 +291,11 @@ The gate, and what a green run looks like on this tree:
 ```bash
 cd projects/working/bond/dr_no
 
-# The gate — 312 passed, src/ coverage 99.02% (floor 90%)
+# The gate — 318 passed, src/ coverage 99.02% (floor 90%)
 uv run pytest tests/ --cov=src --cov-fail-under=90
 
 uv run ruff check src/ scripts/ tests/          # All checks passed!
-uv run ruff format --check src/ scripts/ tests/ # 42 files already formatted
+uv run ruff format --check src/ scripts/ tests/ # 43 files already formatted
 uv run mypy src/ scripts/                       # no issues in 18 source files
 
 # Policy scans

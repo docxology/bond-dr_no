@@ -15,8 +15,6 @@ fixed: top-level ``MissionProvider`` and the module-level ``GADGETS`` mapping.
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Any, cast
 
 from bond_api.protocol import (  # type: ignore[import-untyped]
@@ -35,7 +33,7 @@ from bond_api.protocol import (  # type: ignore[import-untyped]
 from bond_api.registry import GadgetRegistry, MissionRegistry  # type: ignore[import-untyped]
 
 from dr_no import __version__
-from dr_no.canonical import canonical_metrics, canonical_scenario
+from dr_no.canonical import canonical_metrics, canonical_scenario, scenario_fingerprint
 from dr_no.decay_chain import decay_chains
 from dr_no.dose_assessment import GAMMA_CONSTANT_MSV_M2_H_GBQ, INHALATION_DCF_SV_BQ
 from dr_no.island_assessment import THREAT_LEVELS
@@ -55,10 +53,13 @@ def _seed() -> int:
 
 
 def _input_hash() -> str:
-    """Stable fingerprint of the canonical scenario for provenance."""
-    return hashlib.sha256(
-        json.dumps(canonical_scenario(), sort_keys=True).encode("utf-8")
-    ).hexdigest()[:16]
+    """Stable fingerprint of the canonical scenario for provenance.
+
+    Delegates to :func:`dr_no.canonical.scenario_fingerprint` so the provenance
+    hash and the manuscript's ``SCENARIO_FINGERPRINT`` token are the same
+    number by construction rather than by coincidence.
+    """
+    return scenario_fingerprint()
 
 
 def _detector_payload() -> dict[str, float]:

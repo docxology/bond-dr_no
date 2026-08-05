@@ -23,7 +23,11 @@ not gate results, are recorded here — the live measured numbers belong in
    must be consumed by some section, and the results narrative may carry no
    bare metric numeral. `tests/test_manuscript_variables.py` enforces all
    three directions.
-8. `git status` clean after the path-scoped commit.
+8. Regeneration determinism: `scripts/z_generate_manuscript_variables.py` is
+   run twice in a row and every persisted artifact under `output/` must be
+   byte-identical between the two runs.
+   `tests/test_regeneration_determinism.py` enforces it.
+9. `git status` clean after the path-scoped commit.
 
 ## 6.2 Deterministic regeneration
 
@@ -33,10 +37,21 @@ uv run python scripts/run_mission.py render   # all three figures
 uv run python scripts/z_generate_manuscript_variables.py   # tokens + resolved sections
 ```
 
-None of these consult wall-clock state or draw a random number, so repeated runs
-are byte-identical. The one deliberate exception is
-`{{GENERATION_TIMESTAMP}}`, which records when the token map was hydrated; it is
-written to `output/`, never into a computed metric or the provenance hash.
+None of these consult wall-clock state or draw a random number, so every
+persisted artifact — the token map, the resolved manuscript sections, and the
+mission report — is byte-identical across repeated runs. There is no exception:
+no timestamp is written anywhere under `output/`.
+
+Provenance is carried instead by `{{SCENARIO_FINGERPRINT}}`, the truncated
+SHA-256 of the declared scenario. It answers *what was run* rather than *when*,
+so it is stable across reruns and changes the moment `manuscript/config.yaml`
+does. `mission.py` reports the same value as its provenance `input_hash`; both
+come from `scenario_fingerprint()` in `src/dr_no/canonical.py`, so they cannot
+drift apart. An earlier revision did stamp a `datetime.now()` value into this
+section and into `output/data/manuscript_variables.json`, which made the
+byte-identical claim above false on every rerun;
+`tests/test_regeneration_determinism.py` now regenerates the tree twice and
+compares bytes, so that regression cannot return silently.
 
 ## 6.3 Artifacts
 
@@ -55,5 +70,5 @@ written to `output/`, never into a computed metric or the provenance hash.
 * Manuscript variables: `output/data/manuscript_variables.json`; resolved
   sections: `output/manuscript/`.
 
-Environment: Python {{PYTHON_VERSION}}, numpy {{NUMPY_VERSION}}, generated
-{{GENERATION_TIMESTAMP}} (UTC).
+Environment: Python {{PYTHON_VERSION}}, numpy {{NUMPY_VERSION}}; scenario
+fingerprint {{SCENARIO_FINGERPRINT}}.

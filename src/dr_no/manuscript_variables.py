@@ -15,14 +15,13 @@ from __future__ import annotations
 import math
 import platform
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from dr_no import CODENAME, FILM
-from dr_no.canonical import canonical_metrics
+from dr_no.canonical import canonical_metrics, scenario_fingerprint
 from dr_no.decay_chain import chain_names, decay_chains, lookup_chain
 from dr_no.dose_assessment import specific_gamma_constant
 from dr_no.island_assessment import THREAT_LEVELS
@@ -155,9 +154,15 @@ def generate_variables(
             for name, action in sorted(dict(metrics["containment_actions"]).items())
         ),
         # --- environment ------------------------------------------------------
+        # No wall clock here, by design. A ``datetime.now()`` stamp used to be
+        # rendered into the prose and the token JSON, which silently falsified
+        # the manuscript's byte-identical-regeneration claim: every rerun wrote
+        # different bytes. The provenance question the stamp was reaching for
+        # is *what was run*, and the scenario fingerprint answers that from a
+        # committed source without reintroducing nondeterminism.
         "NUMPY_VERSION": _import_version("numpy"),
         "PYTHON_VERSION": platform.python_version(),
-        "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "SCENARIO_FINGERPRINT": scenario_fingerprint(scenario),
     }
 
 

@@ -9,11 +9,15 @@ code does not produce.
 from __future__ import annotations
 
 import re
+import time
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from dr_no import manuscript_variables as mv
+from dr_no.canonical import FINGERPRINT_DIGITS, scenario_fingerprint
+from dr_no.scenario import load_scenario
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 TOKEN_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
@@ -67,10 +71,40 @@ def test_generate_variables_returns_expected_tokens() -> None:
         "STABILITY_CLASSES_CSV",
         "NUMPY_VERSION",
         "PYTHON_VERSION",
-        "GENERATION_TIMESTAMP",
+        "SCENARIO_FINGERPRINT",
     ):
         assert key in variables
         assert variables[key] != ""
+
+
+def test_no_token_is_derived_from_the_wall_clock() -> None:
+    """No generated token may change between two hydrations seconds apart.
+
+    ``generate_variables()`` once carried a ``GENERATION_TIMESTAMP`` built from
+    ``datetime.now()``. This asserts the whole map is clock-free, naming any
+    offending token rather than only reporting that something moved.
+    """
+    first = mv.generate_variables()
+    time.sleep(1.1)
+    second = mv.generate_variables()
+    drifted = {k: (first[k], second[k]) for k in first if first[k] != second[k]}
+    assert drifted == {}, f"clock-derived tokens: {drifted}"
+    assert first.keys() == second.keys()
+
+
+def test_scenario_fingerprint_matches_mission_provenance_hash() -> None:
+    """The manuscript's provenance stamp is the mission's ``input_hash``, not a copy."""
+    variables = mv.generate_variables()
+    assert variables["SCENARIO_FINGERPRINT"] == scenario_fingerprint()
+    assert len(variables["SCENARIO_FINGERPRINT"]) == FINGERPRINT_DIGITS
+
+
+def test_scenario_fingerprint_moves_when_the_scenario_moves() -> None:
+    """A stable stamp is only useful if it is not stable against real edits."""
+    baseline = scenario_fingerprint()
+    scenario = load_scenario()
+    perturbed = replace(scenario, seed=scenario.seed + 1)
+    assert scenario_fingerprint(perturbed) != baseline
 
 
 def test_generate_variables_stability_classes() -> None:

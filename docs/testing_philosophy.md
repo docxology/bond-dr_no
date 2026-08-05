@@ -54,8 +54,25 @@ Tests assert byte-level repeatability directly — `canonical_metrics() ==
 canonical_metrics()`, and `execute()` twice over the same plan — so a
 nondeterminism regression fails loudly rather than flaking.
 
-Wall-clock time never enters a computed metric or the provenance hash. The one
-timestamp (`GENERATION_TIMESTAMP`) is written to `output/` only.
+Wall-clock time is never persisted. No token, metric, provenance field, or
+rendered manuscript section is derived from the clock; the provenance stamp is
+`SCENARIO_FINGERPRINT`, a truncated SHA-256 of the committed scenario.
+
+That claim used to be false and the test suite could not see it. A
+`GENERATION_TIMESTAMP` token was hydrated from `datetime.now()` and written
+into both `output/data/manuscript_variables.json` and the resolved
+`output/manuscript/06_reproducibility.md`, so every regeneration produced
+different bytes while the docs promised byte-identity. The only assertion
+covering that token checked that it was present and non-empty — a shape check
+an ISO-8601 clock string passes forever, so it could never go red. Freezing the
+clock would not have helped either: pinning `now` proves the formatter is a
+function of its input, not that the input is clock-free. The *only* test that
+catches this class of breach is one that runs the real generator twice and
+diffs the bytes it actually wrote.
+`tests/test_regeneration_determinism.py` does that: two consecutive subprocess
+runs of `scripts/z_generate_manuscript_variables.py`, SHA-256 per file over
+everything persisted under `output/`, with a deliberate delay between the runs
+so any clock-derived value would differ.
 
 ## 3. Tests that can fail
 

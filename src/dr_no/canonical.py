@@ -14,6 +14,8 @@ Pure domain logic: imports only the domain core, no bond_api.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 import numpy as np
@@ -40,7 +42,11 @@ __all__ = [
     "canonical_spectrum",
     "detector_energy_grid",
     "line_intensity",
+    "scenario_fingerprint",
 ]
+
+#: Hex digits of the scenario fingerprint carried in provenance and the manuscript.
+FINGERPRINT_DIGITS = 16
 
 #: Background continuum (counts/bin) used for synthesis and the SNR floor.
 BACKGROUND_LEVEL = 50.0
@@ -56,6 +62,22 @@ _BACKGROUND_WINDOW_MIN_KEV = 2500.0
 def canonical_scenario(scenario: MissionScenario | None = None) -> dict[str, object]:
     """The full scenario as a JSON-safe mapping (used for the provenance hash)."""
     return (scenario if scenario is not None else load_scenario()).as_payload()
+
+
+def scenario_fingerprint(scenario: MissionScenario | None = None) -> str:
+    """Stable SHA-256 fingerprint of the declared scenario, truncated to 16 hex digits.
+
+    This is the package's provenance stamp. It is a pure function of the
+    committed ``mission:`` block of ``manuscript/config.yaml`` — it identifies
+    *what was run*, not *when*, which is why it can appear in persisted
+    artifacts without breaking byte-identical regeneration. Editing the
+    scenario changes it; rerunning the same scenario never does.
+
+    Consumed by ``mission.py`` (``ProvenanceRecord.input_hash``) and by
+    ``manuscript_variables.py`` (the ``SCENARIO_FINGERPRINT`` token).
+    """
+    payload = json.dumps(canonical_scenario(scenario), sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()[:FINGERPRINT_DIGITS]
 
 
 def detector_energy_grid(scenario: MissionScenario | None = None) -> np.ndarray:

@@ -70,6 +70,25 @@ uv run pytest tests/test_suite_hygiene.py -q
 git status --short   # clean after commit
 ```
 
+Regeneration must be byte-identical. The suite gates it
+(`tests/test_regeneration_determinism.py`), and you can check it by hand:
+
+```bash
+uv run python scripts/z_generate_manuscript_variables.py
+find output -type f \( -name '*.json' -o -name '*.md' \) | sort | xargs cat | shasum
+sleep 1
+uv run python scripts/z_generate_manuscript_variables.py
+find output -type f \( -name '*.json' -o -name '*.md' \) | sort | xargs cat | shasum
+```
+
+The two digests must match. **Never derive a manuscript token, a metric, or a
+provenance field from the wall clock** — use `scenario_fingerprint()` in
+`src/dr_no/canonical.py` when you need a provenance stamp. A `datetime.now()`
+token silently falsified the package's byte-identical claim for several
+releases behind a token-is-present-and-non-empty assertion that a clock string
+passes forever. Shape checks and frozen clocks both miss this; only a real
+two-run byte diff catches it.
+
 If anything you changed moves a number, regenerate the artifacts *and* update
 `docs/_generated/COUNTS.md`:
 
