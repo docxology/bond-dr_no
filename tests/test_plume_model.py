@@ -46,6 +46,81 @@ def test_sigma_units_in_metres() -> None:
     assert sigma_y(500.0, "D") > 10.0
 
 
+# --- Published-value binding -------------------------------------------------
+#
+# Values read from the Pasquill-Gifford dispersion curves as reproduced in
+# Turner, *Workbook of Atmospheric Dispersion Estimates* (turner1994workbook) —
+# the curves that Martin (1976) fitted. Tolerance is 15%, which is roughly the
+# precision a log-log graph read supports.
+#
+# What this pins and what it does not: it constrains the *implementation's*
+# arithmetic, units, and coefficient transcription against externally published
+# numbers. It does not independently re-validate Martin's fit against the
+# underlying tracer experiments — the fit is taken as published.
+
+_PG_SIGMA_Y_M: dict[str, dict[float, float]] = {
+    #        x = 100 m,  x = 500 m,  x = 1000 m
+    "A": {100.0: 27.0, 500.0: 115.0, 1000.0: 213.0},
+    "B": {100.0: 20.0, 500.0: 84.0, 1000.0: 156.0},
+    "C": {100.0: 13.0, 500.0: 56.0, 1000.0: 104.0},
+    "D": {100.0: 8.5, 500.0: 36.0, 1000.0: 68.0},
+    "E": {100.0: 6.5, 500.0: 27.0, 1000.0: 50.5},
+    "F": {100.0: 4.3, 500.0: 18.0, 1000.0: 34.0},
+}
+
+_PG_SIGMA_Z_M: dict[str, dict[float, float]] = {
+    "A": {100.0: 14.0, 500.0: 124.0, 1000.0: 450.0},
+    "B": {100.0: 11.0, 500.0: 51.0, 1000.0: 110.0},
+    "C": {100.0: 7.5, 500.0: 32.0, 1000.0: 61.0},
+    "D": {100.0: 4.7, 500.0: 18.5, 1000.0: 31.5},
+    "E": {100.0: 3.5, 500.0: 13.0, 1000.0: 21.5},
+    "F": {100.0: 2.3, 500.0: 8.3, 1000.0: 14.0},
+}
+
+
+@pytest.mark.parametrize("stability", STABILITY_CLASSES)
+def test_sigma_y_matches_published_pasquill_gifford(stability: str) -> None:
+    for x_m, expected in _PG_SIGMA_Y_M[stability].items():
+        assert sigma_y(x_m, stability) == pytest.approx(expected, rel=0.15), (
+            f"sigma_y({x_m} m, {stability}) is {sigma_y(x_m, stability):.3g} m; "
+            f"published Pasquill-Gifford value is {expected} m"
+        )
+
+
+@pytest.mark.parametrize("stability", STABILITY_CLASSES)
+def test_sigma_z_matches_published_pasquill_gifford(stability: str) -> None:
+    for x_m, expected in _PG_SIGMA_Z_M[stability].items():
+        assert sigma_z(x_m, stability) == pytest.approx(expected, rel=0.15), (
+            f"sigma_z({x_m} m, {stability}) is {sigma_z(x_m, stability):.3g} m; "
+            f"published Pasquill-Gifford value is {expected} m"
+        )
+
+
+@pytest.mark.parametrize("x_m", [100.0, 500.0, 1000.0, 5000.0])
+def test_sigma_ordering_is_unstable_to_stable(x_m: float) -> None:
+    """A (most unstable) must disperse most and F (most stable) least, in both axes.
+
+    The physical ordering of the classes, which a coefficient table can lose
+    without any monotonicity-in-x test noticing.
+    """
+    ys = [sigma_y(x_m, c) for c in STABILITY_CLASSES]
+    zs = [sigma_z(x_m, c) for c in STABILITY_CLASSES]
+    assert ys == sorted(ys, reverse=True), f"sigma_y not ordered A>...>F at {x_m} m: {ys}"
+    assert zs == sorted(zs, reverse=True), f"sigma_z not ordered A>...>F at {x_m} m: {zs}"
+
+
+@pytest.mark.parametrize("stability", STABILITY_CLASSES)
+def test_sigma_is_strictly_positive_including_near_source(stability: str) -> None:
+    """Martin's negative f_z offsets go non-positive inside ~17 m; the floor holds.
+
+    A non-positive sigma would put a negative concentration into the report
+    rather than raising.
+    """
+    for x_m in (0.0, 1.0, 5.0, 10.0, 20.0, 100.0, 50_000.0):
+        assert sigma_y(x_m, stability) > 0.0
+        assert sigma_z(x_m, stability) > 0.0
+
+
 def test_sigma_negative_distance() -> None:
     with pytest.raises(ValueError):
         sigma_y(-1.0, "D")

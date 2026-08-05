@@ -48,10 +48,14 @@ STABILITY_CLASSES = ("A", "B", "C", "D", "E", "F")
 
 @dataclass(frozen=True)
 class StabilitySpec:
-    """Pasquill–Gifford dispersion coefficients (Martin/Green, 1976 form).
+    """Pasquill–Gifford dispersion coefficients in D. O. Martin's (1976) form.
 
     ``sigma_y = a_y * x^b_y`` and ``sigma_z = c_z * x^d_z + f_z`` where ``x`` is
-    downwind distance in kilometres; the results are returned in metres.
+    downwind distance **in kilometres** and the coefficients are scaled so that
+    both results come out **directly in metres**. There is no further unit
+    conversion: multiplying the result by 1000 (as an earlier revision did)
+    injects a spurious factor of ``1000^(1-b)`` and is the ``sigma`` defect
+    regression-tested in ``tests/test_defect_regressions.py``.
     """
 
     class_label: str
@@ -68,17 +72,31 @@ class StabilitySpec:
             )
 
 
-#: Canonical Pasquill–Gifford coefficient table (x in km, sigma in m).
+#: Pasquill–Gifford coefficients as published by D. O. Martin (1976), JAPCA
+#: 26(2):145-147 (``martin1976comment``): power-law fits to the Pasquill-Gifford
+#: curves reproduced in Turner's *Workbook of Atmospheric Dispersion Estimates*.
+#: ``x`` in km, sigma in metres. These are the near-field (x <= 1 km) branch;
+#: Martin publishes a second sigma_z branch for x > 1 km that this package does
+#: not implement — see the accuracy note on :func:`sigma_z`.
 STABILITY_TABLE: dict[str, StabilitySpec] = {
-    "A": StabilitySpec("A", 0.3658, 0.9031, 0.00024, 2.1250, 0.0),
-    "B": StabilitySpec("B", 0.2751, 0.9031, 0.0550, 1.6674, 0.0),
-    "C": StabilitySpec("C", 0.2089, 0.9031, 0.1130, 0.9169, 0.0),
-    "D": StabilitySpec("D", 0.1474, 0.9031, 0.2227, 0.7255, 0.0),
-    "E": StabilitySpec("E", 0.1046, 0.9031, 0.2118, 0.6784, 0.0),
-    "F": StabilitySpec("F", 0.0708, 0.9031, 0.0864, 0.7400, 0.0),
+    "A": StabilitySpec("A", 213.0, 0.894, 440.8, 1.941, 9.27),
+    "B": StabilitySpec("B", 156.0, 0.894, 106.6, 1.149, 3.30),
+    "C": StabilitySpec("C", 104.0, 0.894, 61.0, 0.911, 0.0),
+    "D": StabilitySpec("D", 68.0, 0.894, 33.2, 0.725, -1.70),
+    "E": StabilitySpec("E", 50.5, 0.894, 22.8, 0.678, -1.30),
+    "F": StabilitySpec("F", 34.0, 0.894, 14.35, 0.740, -0.35),
 }
 
 _KM = 1000.0  # metres per km
+
+#: Positive floor (m) applied to both dispersion coefficients.
+#:
+#: Martin's vertical fits carry small negative offsets ``f_z`` for classes D, E
+#: and F, so the raw formula returns a non-positive ``sigma_z`` inside roughly
+#: 7-17 m of the source (and ``sigma_y = 0`` exactly at ``x = 0``). The fits are
+#: not valid that close in anyway; flooring keeps the Gaussian well-posed
+#: instead of returning a negative concentration.
+_SIGMA_FLOOR_M = 0.1
 
 
 def _spec(stability: str) -> StabilitySpec:
@@ -91,22 +109,34 @@ def _spec(stability: str) -> StabilitySpec:
 
 
 def sigma_y(x_m: float, stability: str) -> float:
-    """Horizontal dispersion coefficient (m) at downwind distance ``x_m`` (m)."""
+    """Horizontal dispersion coefficient (m) at downwind distance ``x_m`` (m).
+
+    Martin's coefficients take ``x`` in km and already return metres, so the
+    only conversion is ``x_m / 1000``. The result is floored at
+    ``_SIGMA_FLOOR_M``.
+    """
     if x_m < 0:
         raise ValueError("downwind distance must be non-negative")
     spec = _spec(stability)
     x_km = x_m / _KM
-    # Martin/Greene coefficients take x in km and yield sigma in km -> convert to m.
-    return float(_KM * spec.a_y * (x_km**spec.b_y))
+    return max(float(spec.a_y * (x_km**spec.b_y)), _SIGMA_FLOOR_M)
 
 
 def sigma_z(x_m: float, stability: str) -> float:
-    """Vertical dispersion coefficient (m) at downwind distance ``x_m`` (m)."""
+    """Vertical dispersion coefficient (m) at downwind distance ``x_m`` (m).
+
+    Accuracy, stated plainly: this is Martin's near-field (``x <= 1 km``)
+    branch applied at *all* distances. Martin publishes a separate coefficient
+    set for ``x > 1 km`` which this package does not implement, so ``sigma_z``
+    beyond 1 km is an extrapolation of the near-field fit rather than the
+    published far-field curve. ``sigma_y`` has a single branch and carries no
+    such caveat. The result is floored at ``_SIGMA_FLOOR_M``.
+    """
     if x_m < 0:
         raise ValueError("downwind distance must be non-negative")
     spec = _spec(stability)
     x_km = x_m / _KM
-    return float(_KM * (spec.c_z * (x_km**spec.d_z) + spec.f_z))
+    return max(float(spec.c_z * (x_km**spec.d_z) + spec.f_z), _SIGMA_FLOOR_M)
 
 
 def _validate_source(Q: float, u: float, H: float) -> None:

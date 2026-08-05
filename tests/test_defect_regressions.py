@@ -23,7 +23,7 @@ from dr_no.island_assessment import (
     containment_recommendation,
 )
 from dr_no.manuscript_variables import _import_version
-from dr_no.plume_model import centerline_concentration, isopleth_extent
+from dr_no.plume_model import centerline_concentration, isopleth_extent, sigma_y, sigma_z
 from dr_no.shielding import (
     MASS_ATTENUATION_CM2_G,
     MATERIAL_DENSITY_G_CM3,
@@ -34,6 +34,50 @@ from dr_no.shielding import (
 _PLUME = {"Q": 4.0e5, "u": 3.0, "stability": "D"}
 
 
+# --- DEFECT: sigma_y/sigma_z round-tripped x through km and back --------------
+
+
+def test_sigma_has_no_spurious_km_round_trip() -> None:
+    """The dispersion coefficients must reproduce published Pasquill-Gifford values.
+
+    The old implementation divided ``x`` by 1000 and then multiplied the whole
+    power law by 1000, which does not cancel: for ``sigma = k x^b`` it injects a
+    factor ``1000^(1-b)``. Because ``b`` differs per class and per axis, the
+    error differed per class and per axis, so no ratio test could see it.
+
+    The wrong answers it produced at x = 1 km, class D: sigma_y = 147 m against
+    a published 68 m, and sigma_z = 223 m against a published 31.5 m — the
+    latter 7x high.
+    """
+    assert sigma_y(1000.0, "D") == pytest.approx(68.0, rel=0.05)
+    assert sigma_z(1000.0, "D") == pytest.approx(31.5, rel=0.05)
+
+
+def test_sigma_z_class_ordering_is_not_inverted() -> None:
+    """Class A must disperse vertically more than class F, not 1800x less.
+
+    The garbled coefficient table shipped alongside the round-trip gave
+    sigma_z(1 km, A) = 0.24 m and sigma_z(1 km, F) = 86 m — the Pasquill-Gifford
+    ordering exactly backwards, with class A (strong convection) modelled as the
+    tightest plume in the table.
+    """
+    assert sigma_z(1000.0, "A") > sigma_z(1000.0, "F")
+    assert sigma_z(1000.0, "A") > 100.0, "class A vertical spread collapsed"
+
+
+def test_sigma_z_never_returns_a_non_positive_value() -> None:
+    """Martin's negative f_z offsets go non-positive within ~17 m of the source.
+
+    Unfloored, ``sigma_z(5 m, 'D')`` is -0.99 m, which turns
+    ``Q / (2 pi u sigma_y sigma_z)`` into a *negative* concentration rather than
+    an error.
+    """
+    assert sigma_z(5.0, "D") > 0.0
+    assert sigma_z(5.0, "E") > 0.0
+    assert sigma_z(5.0, "F") > 0.0
+    assert centerline_concentration(5.0, H=0.0, **_PLUME) > 0.0
+
+
 # --- DEFECT: isopleth_extent bisected a non-monotonic profile ------------------
 
 
@@ -41,10 +85,9 @@ def test_isopleth_extent_is_exact_at_the_reported_distance() -> None:
     """The returned distance must actually sit on the threshold isopleth.
 
     The old single-bisection implementation, seeded at x = 1 m, returned 1.0 m
-    for the canonical elevated release whose true 1000 Bq/m3 extent is ~10.9 m —
-    a wrong headline number, silently.
+    for the canonical elevated release — a wrong headline number, silently.
     """
-    threshold = 1000.0
+    threshold = 100.0
     extent = isopleth_extent(threshold, H=10.0, **_PLUME)
     assert extent > 1.0, "regression: bisection collapsed onto its lower bracket"
     assert centerline_concentration(extent, H=10.0, **_PLUME) == pytest.approx(threshold, rel=1e-6)

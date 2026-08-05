@@ -7,6 +7,24 @@ claims:
     claim: "six Pasquill–Gifford stability classes (A–F) are modelled"
     source: "src/dr_no/plume_model.py::STABILITY_CLASSES"
     verified: true
+  - id: "dispersion-coefficients-published"
+    claim: >-
+      sigma_y and sigma_z reproduce published Pasquill-Gifford values at 100,
+      500 and 1000 m for all six classes (15% tolerance, the precision a
+      log-log graph read supports), and preserve the physical class ordering
+      sigma(A) > ... > sigma(F). Only Martin's near-field (x <= 1 km) sigma_z
+      branch is implemented; beyond 1 km sigma_z is an extrapolation of that
+      fit, and both coefficients are floored at 0.1 m near the source where
+      Martin's negative f_z offsets go non-positive.
+    source: "tests/test_plume_model.py::test_sigma_z_matches_published_pasquill_gifford"
+    verified: true
+  - id: "no-mock-framework"
+    claim: >-
+      No mock framework in src/ or tests/, and exactly four declared
+      monkeypatch.setattr substitutions - enforced by parsing the suite's own
+      AST, not by a grep that cannot see monkeypatch.
+    source: "tests/test_suite_hygiene.py"
+    verified: true
   - id: "threat-band-count"
     claim: "five threat bands (LOW…CRITICAL) with breached-containment escalation"
     source: "src/dr_no/island_assessment.py::THREAT_LEVELS"

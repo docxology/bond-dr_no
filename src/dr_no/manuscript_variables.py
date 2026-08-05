@@ -149,6 +149,7 @@ def generate_variables(
         "PEAK_CONCENTRATION_BQ_M3": _sci(float(metrics["peak_concentration_bq_m3"])),
         "ISLAND_THREAT": str(metrics["island_threat"]),
         "DOWNWIND_EXTENT_M": f"{float(metrics['downwind_extent_m']):.0f}",
+        "ACTION_THRESHOLD_VERDICT": _threshold_verdict(float(metrics["downwind_extent_m"])),
         "CONTAINMENT_ACTIONS_CSV": ", ".join(
             f"{name}: {action}"
             for name, action in sorted(dict(metrics["containment_actions"]).items())
@@ -158,6 +159,20 @@ def generate_variables(
         "PYTHON_VERSION": platform.python_version(),
         "GENERATION_TIMESTAMP": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+
+
+def _threshold_verdict(downwind_extent_m: float) -> str:
+    """Prose for whether the centreline ever reaches the declared action threshold.
+
+    The manuscript sentence used to presuppose an exceedance ("stays above the
+    threshold out to X m"), which reads as a measurement even when the isopleth
+    is empty and X is zero. Deriving the clause from the computed extent means
+    the null result is reported as a null result rather than as a very short
+    contaminated strip.
+    """
+    if downwind_extent_m <= 0.0:
+        return "never reaches that level at any downwind distance"
+    return "stays at or above it from the ground-level maximum outward"
 
 
 def _sci(value: float, *, digits: int = 2) -> str:

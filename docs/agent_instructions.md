@@ -68,7 +68,9 @@ which and why.
 ## 6. Guardrails
 
 - No mock framework (`MagicMock`, `mocker.patch`, `unittest.mock`). Real data
-  and real computation only.
+  and real computation only. Four `monkeypatch.setattr` substitutions are
+  declared and inventoried in `tests/test_suite_hygiene.py`; adding a fifth
+  fails the suite until it is declared there.
 - Deterministic: fixed scenario, no untracked randomness, no wall-clock in
   persisted artifacts.
 - Type hints and docstrings on everything public; ruff and mypy clean on `src/`,

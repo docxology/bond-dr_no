@@ -45,9 +45,26 @@ according to the Pasquill–Gifford stability class (A–F):
 
 $$ \sigma_y = a_y x^{b_y}, \qquad \sigma_z = c_z x^{d_z} + f_z,$$
 
-with the Martin/Greene coefficient set ({{STABILITY_CLASSES_CSV}}). The
-downwind extent over which contamination exceeds an action threshold is found
-by binary search along the centreline.
+with $x$ in kilometres and $\sigma$ in metres, using the coefficient set
+published by D. O. Martin [@martin1976comment] for the classes
+{{STABILITY_CLASSES_CSV}}. Two accuracy caveats belong here rather than in a
+footnote. First, only Martin's near-field ($x \le 1$ km) $\sigma_z$ branch is
+implemented, so vertical spread beyond 1 km is an extrapolation of that fit and
+not the published far-field curve. Second, Martin's $f_z$ offsets are negative
+for classes D, E and F, which drives $\sigma_z$ non-positive within roughly
+17 m of the source; both coefficients are therefore floored at a small positive
+value, and concentrations inside that near-source region are not modelled
+quantitatively. `tests/test_plume_model.py` pins both coefficients against
+published Pasquill–Gifford values at 100, 500 and 1000 m for every class, and
+against the physical class ordering $\sigma(A) > \cdots > \sigma(F)$.
+
+The downwind extent over which contamination exceeds an action threshold is
+**not** found by a plain bisection: the ground-level centreline profile of an
+elevated release is unimodal, not monotone, so a bisection seeded at the
+release point assumes a monotonicity that does not exist. `isopleth_extent`
+instead scans log-spaced samples to locate the ground-level maximum, returns
+zero extent if even that maximum is below the threshold, and only then bisects
+the monotone decaying tail beyond the peak.
 
 ## 2.3 Island threat assessment
 

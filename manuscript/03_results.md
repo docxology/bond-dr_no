@@ -45,15 +45,31 @@ Because the release is elevated, the ground-level centreline profile is **not**
 monotonic: it is effectively zero at the stack, where the plume is still aloft,
 rises to a maximum once vertical spreading brings it to ground, and only then
 decays. At the nearest facility's downwind distance the maximum ground-level
-concentration on a crosswind transect is {{PEAK_CONCENTRATION_BQ_M3}} Bq/m³, and
-the centreline concentration stays above the declared action threshold of
-{{ACTION_CONCENTRATION_BQ_M3}} Bq/m³ out to {{DOWNWIND_EXTENT_M}} m downwind.
+concentration on a crosswind transect is {{PEAK_CONCENTRATION_BQ_M3}} Bq/m³.
+Measured against the declared action threshold of
+{{ACTION_CONCENTRATION_BQ_M3}} Bq/m³, the centreline profile
+{{ACTION_THRESHOLD_VERDICT}}, so the reported downwind extent is
+{{DOWNWIND_EXTENT_M}} m. That clause is itself computed from the extent rather
+than typed, so a scenario whose plume *does* breach the threshold reports the
+exceedance and one whose plume does not reports the null result — neither is
+presupposed by the prose.
 
 That extent is computed in two stages — locate the ground-level maximum by
 scan, then bisect only the monotone decaying tail beyond it — precisely because
 the profile is unimodal. A single bisection seeded at the release point assumes
 a monotonicity that an elevated release does not have, and returns a confidently
 wrong distance rather than an error.
+
+These plume figures moved materially at the phase-6 review. An earlier revision
+of `sigma_y`/`sigma_z` converted the downwind distance into kilometres and then
+multiplied the whole power law back up by the same factor. That does not cancel
+for a power law, and it left every dispersion coefficient wrong by an amount
+that differed per stability class and per axis — with the vertical coefficients
+so badly scaled that the Pasquill–Gifford class ordering came out reversed.
+Correcting it moves the peak concentration, the downwind extent, and the island
+posture reported below. The values above are the corrected ones; the defect is
+pinned by `tests/test_defect_regressions.py` and by the published-value gate
+described in the methodology.
 
 ## 3.3 Island assessment
 

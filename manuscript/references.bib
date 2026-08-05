@@ -150,8 +150,13 @@
   number  = {2},
   pages   = {145--147},
   year    = {1976},
-  note    = {Power-law fits to the Pasquill-Gifford curves; the a/b/c/d/f
-             coefficient form used in plume_model.STABILITY_TABLE}
+  note    = {Power-law fits to the Pasquill-Gifford curves. The a/b/c/d/f
+             values in plume_model.STABILITY_TABLE are taken from this paper
+             verbatim (x in km, sigma in m); only the near-field x <= 1 km
+             sigma_z branch is implemented. A phase-6 review found the table
+             had previously held neither this paper's coefficients nor a
+             consistent unit convention; tests/test_plume_model.py now binds
+             both coefficients to published Pasquill-Gifford values}
 }
 
 @book{turner1994workbook,

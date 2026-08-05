@@ -67,8 +67,9 @@ The dispersion curves paired with Pasquill's classes.
 
 **[martin1976comment]** D. O. Martin, "Comment on 'The Change of Concentration
 Standard Deviations with Distance'," *Journal of the Air Pollution Control
-Association* 26(2):145–147, 1976. — The power-law coefficient form used in
-`plume_model.STABILITY_TABLE`.
+Association* 26(2):145–147, 1976. — The source of the power-law coefficients in
+`plume_model.STABILITY_TABLE`, taken verbatim ($x$ in km, $\sigma$ in m); only
+the near-field $x \le 1$ km $\sigma_z$ branch is implemented.
 
 **[turner1994workbook]** D. B. Turner, *Workbook of Atmospheric Dispersion
 Estimates: An Introduction to Dispersion Modeling*, 2nd ed., Lewis

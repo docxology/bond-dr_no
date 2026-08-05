@@ -3,7 +3,7 @@
 Zero-mock, real-data, deterministic testing — and, past that, tests that can
 actually fail.
 
-## 1. No mocks
+## 1. No mock framework — and four declared substitutions
 
 No `MagicMock`, no `mocker.patch`, no `unittest.mock`, anywhere. Every test
 calls the real computation path with real arguments and checks a real result.
@@ -15,13 +15,30 @@ a fake one:
   actual `IsotopeProfile(gamma_lines=())` and put it in a real library dict.
 - To exercise the strict config loader's failure modes, we write **real YAML
   files** to `tmp_path` and load them.
-- To exercise the CLI's unregistered-provider path, `pytest.MonkeyPatch`
-  redirects a module-level *constant* (`cli.SLUG`) — a value, not a stubbed
-  behaviour.
 
-`pytest.MonkeyPatch` on a module attribute is the one sanctioned substitution
-and is used sparingly. The line is: swap a **value or a real object**, never
-install an object whose behaviour is scripted by the test.
+Beyond that there are exactly **four** `pytest.MonkeyPatch` substitutions, and
+an earlier revision of this page described only one of them. Stated in full:
+
+| Site | Replaces | With |
+| --- | --- | --- |
+| `test_cli.py` | `cli.SLUG` | a string constant — a value, not behaviour |
+| `test_manuscript_variables.py` | `mv.library_names` | `lambda: ()` — a real empty tuple |
+| `test_manuscript_variables.py` | `mv.isotope_library` | builtin `dict` — a real empty mapping |
+| `test_isotope_profiles.py` | `canonical.isotope_library` | `lambda: extended` — a real dict of real `IsotopeProfile`s |
+
+Three of those four replace a production **callable**, not merely a value, so
+"we only swap constants" would be false. What is true, and is the actual line:
+none installs an object whose behaviour is scripted by the test, none records or
+asserts on calls, and each exists only to reach an empty-input guard that no
+real configuration can produce.
+
+That is a claim about the suite, so it is checked by reading the suite's own
+source rather than asserted here: `tests/test_suite_hygiene.py` scans every file
+under `src/` and `tests/` for mock-framework names and parses every
+`monkeypatch.setattr` call out of the AST, failing on any that is not in its
+declared inventory — and failing equally if a declared one silently disappears.
+A grep for framework names alone, which is what the docs used to point at,
+cannot see any of the four.
 
 Real files, real numbers, real matplotlib PNGs, real subprocess invocations for
 the script smoke tests.
@@ -131,6 +148,7 @@ covered by checks that would notice if they broke.
 | `test_manuscript_variables.py` | token hydration + the three manuscript gates |
 | `test_version_identity.py` | one version across pyproject / `__init__` / config |
 | `test_defect_regressions.py` | one test per defect found in review |
+| `test_suite_hygiene.py` | the no-mock claim, enforced by reading the suite's own source |
 | `test_cli.py` | in-process CLI phase driver, exit codes |
 | `test_figures.py` | figure generators write real PNGs |
 | `test_scripts_smoke.py` | thin scripts exit cleanly and write artifacts |

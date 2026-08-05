@@ -260,3 +260,45 @@ def test_sci_never_truncates_an_integral_magnitude() -> None:
         rendered = mv._sci(value)
         numeric = rendered.replace("$", "").replace(r"\times10^{", "e").replace("}", "")
         assert float(numeric) == pytest.approx(value, rel=1e-2), rendered
+
+
+def test_threshold_verdict_reports_a_null_result_as_null() -> None:
+    """A zero extent must read as "never reached", not as a very short strip.
+
+    The prose used to presuppose an exceedance ("stays above the threshold out
+    to X m"), so a zero X rendered as a measurement of a contaminated strip of
+    zero length rather than as the absence of any exceedance.
+    """
+    assert mv._threshold_verdict(0.0) == "never reaches that level at any downwind distance"
+    assert mv._threshold_verdict(-1.0) == "never reaches that level at any downwind distance"
+
+
+def test_threshold_verdict_reports_an_exceedance_when_there_is_one() -> None:
+    """The other branch: a positive extent must not read as a null result."""
+    verdict = mv._threshold_verdict(318.0)
+    assert "never" not in verdict
+    assert verdict == "stays at or above it from the ground-level maximum outward"
+
+
+def test_threshold_verdict_token_tracks_the_scenario(tmp_path: Path) -> None:
+    """The token is derived from the computed extent, not frozen.
+
+    Loosening the declared action threshold far enough must flip the rendered
+    clause — a value pasted once and never recomputed would not move.
+    """
+    import yaml
+
+    config = mv.load_manuscript_config()
+    strict = mv.generate_variables()
+    assert strict["ACTION_THRESHOLD_VERDICT"] == (
+        "never reaches that level at any downwind distance"
+    )
+
+    config["mission"]["action_concentration_bq_m3"] = 1.0
+    loosened_path = tmp_path / "config.yaml"
+    loosened_path.write_text(yaml.safe_dump(config), encoding="utf-8")
+    loosened = mv.generate_variables(config_path=loosened_path)
+    assert loosened["ACTION_THRESHOLD_VERDICT"] == (
+        "stays at or above it from the ground-level maximum outward"
+    )
+    assert float(loosened["DOWNWIND_EXTENT_M"]) > 0.0

@@ -123,7 +123,7 @@ on a missing or mistyped key rather than substituting a default, and
 | Path | Role |
 | --- | --- |
 | `src/dr_no/` | the implementation (see the module table above) |
-| `tests/` | zero-mock, real-data suite |
+| `tests/` | real-data suite; no mock framework, substitutions gated by `tests/test_suite_hygiene.py` |
 | `scripts/` | thin CLIs: `run_mission.py`, `z_generate_manuscript_variables.py` |
 | `manuscript/` | the mission report, `config.yaml` (scenario of record), `references.bib` |
 | `docs/` | architecture, agent instructions, testing doctrine, live counts |
@@ -133,7 +133,16 @@ on a missing or mistyped key rather than substituting a default, and
 
 - **Coverage**: line-and-branch on `src/`, gate `--cov-fail-under=90`. Measured
   figure and per-module breakdown: [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md).
-- **Zero mocks** — every test computes with real data. Verified by scan.
+- **No mock framework, and four declared substitutions** — no `MagicMock`,
+  `mocker.patch`, or `unittest.mock` anywhere; every test computes with real
+  data. Stated exactly, because the previous wording ("zero mocks, verified by
+  scan") was not exact: four `monkeypatch.setattr` calls do replace a
+  module-level production attribute — three swap a callable for a trivial real
+  one to reach an empty-library guard, one swaps a string constant. The scan
+  that sentence pointed at grepped only for mock-framework *names* and was
+  structurally blind to them. Both facts are now gated in-suite by
+  [`tests/test_suite_hygiene.py`](tests/test_suite_hygiene.py), which reads the
+  suite's own source: an undeclared substitution fails the build.
 - **Deterministic** — fixed declared scenario, no RNG anywhere in `src/`, no
   wall-clock in any computed metric or in the provenance hash.
 - **Typed and linted** — ruff and mypy clean on `src/`, `scripts/`, and `tests/`.

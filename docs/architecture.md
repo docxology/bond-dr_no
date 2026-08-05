@@ -103,7 +103,9 @@ coefficients (Sv/Bq) and specific gamma-ray constants (mSv·m²·h⁻¹·GBq⁻�
 
 **`plume_model.py`** — atmospheric transport. The steady-state Gaussian plume
 with ground reflection, over Pasquill–Gifford classes A–F in the power-law
-coefficient form (`StabilitySpec`, `STABILITY_TABLE`). `sigma_y`/`sigma_z` give
+coefficient form (`StabilitySpec`, `STABILITY_TABLE`), with the coefficients as
+published by D. O. Martin (1976) — `x` in km, sigma in metres, no further unit
+conversion. `sigma_y`/`sigma_z` give
 the dispersion coefficients; `gaussian_plume_concentration()` and
 `centerline_concentration()` the field; `grid_concentration()` a 2-D field;
 `find_ground_level_max()` the crosswind maximum; `isopleth_extent()` the
@@ -115,6 +117,17 @@ downwind extent above a threshold.
 > first and bisects only the decaying tail. A single bisection seeded at the
 > release point assumes a monotonicity that does not exist and returns a
 > confidently wrong distance. See `tests/test_defect_regressions.py`.
+
+> **The dispersion coefficients are pinned to published values.** An earlier
+> revision divided `x` by 1000 and then multiplied the power law back by 1000,
+> which injects a factor `1000^(1-b)` rather than cancelling — every sigma was
+> wrong by a class- and axis-dependent amount, badly enough that the
+> Pasquill–Gifford class ordering came out reversed (`sigma_z(1 km, A)` was
+> 0.24 m against a published 450 m). `tests/test_plume_model.py` now checks both
+> coefficients against published Pasquill–Gifford values at 100, 500 and 1000 m
+> for all six classes, and checks the physical class ordering. Only Martin's
+> near-field (`x <= 1 km`) `sigma_z` branch is implemented, so vertical spread
+> beyond 1 km is an extrapolation — stated on `sigma_z` and in methodology §2.2.
 
 **`island_assessment.py`** — the decision layer. `DetectedFacility` and
 `Meteorology` in, `IslandAssessment` out. Per facility it takes the plume

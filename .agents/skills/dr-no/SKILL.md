@@ -62,7 +62,9 @@ uv run python scripts/z_generate_manuscript_variables.py   # hydrate {{TOKEN}}s
 - Pasquill–Gifford sigma coefficients are kilometre-based — `sigma_y`/`sigma_z`
   convert to metres (`*1000`). Revert that and elevated releases produce ~0
   ground concentration.
-- No mocks, no RNG, no wall-clock in artifacts; fixed seed 42.
+- No mock framework, no RNG, no wall-clock in artifacts; fixed seed 42.
+  Four declared `monkeypatch.setattr` substitutions are inventoried and gated
+  in `tests/test_suite_hygiene.py`.
 - Local-only: no remote, never push; path-scoped commits in this repo only.
 - `output/` is git-ignored (regenerable); z_generate + render keep it current.
 - Manuscript `{{TOKEN}}`s resolve from `src/dr_no/manuscript_variables.py`;

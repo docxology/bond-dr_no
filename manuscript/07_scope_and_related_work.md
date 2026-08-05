@@ -53,7 +53,10 @@ no true-coincidence summing, and no pulse pile-up, so the identification problem
 is easier than a real measurement. The Gaussian plume is a steady-state,
 flat-terrain, constant-wind idealisation valid for short range and neutral-ish
 conditions; it has no deposition term, so it does not conserve mass against the
-ground. And the threat banding is a declared decision rule, not a regulatory
+ground, and only the near-field ($x \le 1$ km) vertical-coefficient branch is
+implemented, so $\sigma_z$ past a kilometre is an extrapolation of a fit that
+was published for shorter range. And the threat banding is a declared decision
+rule, not a regulatory
 standard — the band edges are constants in `island_assessment.py`, chosen to be
 legible rather than derived from any published intervention level.
 

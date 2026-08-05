@@ -1,9 +1,9 @@
 # CRAB KEY (dr_no) — TODO & integration register
 
-**Status:** phase-5 review complete. Eight domain modules plus a config-backed
+**Status:** phase-6 adversarial review complete. Eight domain modules plus a config-backed
 scenario loader and a single-source metric pass; a frozen BOND-API mission
 adapter; thin CLIs; a fully tokenized manuscript; three deterministic figures;
-and a zero-mock suite at 99.01% coverage (measured — see
+and a real-data suite with no mock framework (measured coverage — see
 [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md)).
 
 What was built is described in [`README.md`](README.md) and
@@ -83,7 +83,7 @@ Kept briefly as a record of what the regression tests in
 - Config/computation drift — the `mission:` block was declared but never read;
   `canonical.py` held a second, hardcoded copy of the scenario.
 - `isopleth_extent()` bisected a non-monotonic profile and reported 1 m of
-  contamination where the true extent was 10.9 m.
+  contamination where the isopleth lay elsewhere.
 - `assess_island()` accepted a `warn_dose_rate_sv_s` argument it never used.
 - `IslandAssessment` stored one fact in two fields that could disagree.
 - A zero-gain calibration fallback that would have rendered as a real number.
@@ -95,6 +95,40 @@ Kept briefly as a record of what the regression tests in
 - Version drift across `pyproject.toml` (0.1.0), `__init__.py` (0.2.0), and
   `config.yaml` (0.1.0).
 - Two `references.bib` entries that could not be verified.
+
+## Closed in the phase-6 adversarial review
+
+- **`sigma_y`/`sigma_z` carried a spurious km round-trip.** Both divided `x` by
+  1000 and then multiplied the whole power law by 1000, which injects
+  `1000^(1-b)` instead of cancelling. Combined with a garbled coefficient table
+  this made `sigma_z(1 km, D)` 223 m against a published 31.5 m and inverted the
+  class ordering (`sigma_z(1 km, A)` = 0.24 m). Fixed by adopting D. O. Martin's
+  (1976) published coefficients directly and dropping the multiply. This moved
+  the headline: peak concentration 3.99 -> 54.4 Bq/m3, downwind extent
+  10.9 -> 0 m (the corrected plume never reaches the declared action threshold),
+  island posture MODERATE -> HIGH. Pinned by
+  `tests/test_plume_model.py::test_sigma_{y,z}_matches_published_pasquill_gifford`
+  and by three named regressions in `tests/test_defect_regressions.py`.
+- **The plume gate could not fail on that defect.** Its only sigma coverage was
+  monotonicity in `x` plus `sigma_y(500,'D') > 10`, both of which hold under any
+  positive-exponent power law. Replaced with published-value binding at three
+  distances for all six classes, a cross-class ordering check, and a
+  strict-positivity check near the source.
+- **A citation `references.bib` records as deleted was still cited in prose.**
+  "Martin/Green, 1976" survived in the `StabilitySpec` docstring and
+  "the Martin/Greene coefficient set" in methodology §2.2. Both now name
+  D. O. Martin (1976), `martin1976comment`, which is the actual source and is
+  now the actual coefficient table.
+- **Methodology contradicted the implementation it described**, saying the
+  downwind extent "is found by binary search along the centreline" while the
+  code and §3.2 both argue at length that plain bisection is invalid for an
+  elevated release. §2.2 now describes the two-stage scan-then-bisect method.
+- **"Zero mocks — verified by scan" was overstated.** Four
+  `monkeypatch.setattr` calls replace a production attribute, and the documented
+  scan grepped only for mock-framework names, so it could not see any of them.
+  The claim is now stated exactly in `README.md` and
+  `docs/testing_philosophy.md`, and enforced by `tests/test_suite_hygiene.py`,
+  which parses the suite's own AST and fails on any undeclared substitution.
 
 ## Never
 

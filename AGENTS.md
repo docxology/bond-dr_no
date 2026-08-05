@@ -63,7 +63,10 @@ uv run ruff check src/ scripts/ tests/
 uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo Clean
-rg -n "MagicMock|mocker\.patch|unittest\.mock" src/ tests/ || echo "No mocks"
+rg -n "MagicMock|mocker\.patch|unittest\.mock" src/ tests/ || echo "No mock framework"
+# That grep is necessary but NOT sufficient — it cannot see monkeypatch.setattr.
+# The complete check is in-suite and runs as part of the pytest line above:
+uv run pytest tests/test_suite_hygiene.py -q
 git status --short   # clean after commit
 ```
 
