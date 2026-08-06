@@ -131,3 +131,11 @@ def test_assess_island_zero_activity_facility() -> None:
     facilities = [DetectedFacility("quiet", 800.0, 0.0, {}, "contained")]
     assessment = assess_island(facilities, meteo, source_Q=4.0e5)
     assert assessment.facilities["quiet"] in THREAT_LEVELS
+
+
+def test_facility_threat_level_validates_threshold_values() -> None:
+    """Config-threshold tuples are validated, not trusted."""
+    with pytest.raises(ValueError, match="dose thresholds must be positive"):
+        facility_threat_level(1e-10, dose_thresholds=(1e-11, 1e-9, -1e-7, 1e-5))
+    with pytest.raises(ValueError, match="dose thresholds must be strictly ascending"):
+        facility_threat_level(1e-10, dose_thresholds=(1e-5, 1e-9, 1e-7, 1e-11))

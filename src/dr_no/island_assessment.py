@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from itertools import pairwise
 
 from dr_no.dose_assessment import (
     INHALATION_DCF_SV_BQ,
@@ -87,18 +88,34 @@ def facility_threat_level(
     dose_rate_sv_s: float,
     *,
     containment: str = "contained",
+    dose_thresholds: Iterable[float] | None = None,
 ) -> str:
     """Map a dose rate (Sv/s) onto a five-level threat band.
 
     A breached facility is escalated one band to reflect the loss of shielding
     and the elevated risk of secondary contamination.
+
+    ``dose_thresholds`` are the band edges; they default to the module-level
+    literal only as a standalone-domain fallback. The mission scenario declares
+    the authoritative edges in ``manuscript/config.yaml`` under
+    ``mission.threat.band_edges_sv_s`` and :func:`assess_island` threads them
+    through — so the canonical posture is config-driven, never baked in here.
     """
     if dose_rate_sv_s < 0:
         raise ValueError("dose rate must be non-negative")
     if containment not in ("contained", "breached"):
         raise ValueError("containment must be 'contained' or 'breached'")
+    thresholds = tuple(dose_thresholds) if dose_thresholds is not None else _DOSE_THRESHOLDS_SV_S
+    if not thresholds or len(thresholds) != len(THREAT_LEVELS) - 1:
+        raise ValueError(
+            f"expected {len(THREAT_LEVELS) - 1} dose thresholds for {len(THREAT_LEVELS)} bands"
+        )
+    if any(t <= 0 for t in thresholds):
+        raise ValueError("dose thresholds must be positive")
+    if any(high <= low for low, high in pairwise(thresholds)):
+        raise ValueError("dose thresholds must be strictly ascending")
     level = 0
-    for threshold in _DOSE_THRESHOLDS_SV_S:
+    for threshold in thresholds:
         if dose_rate_sv_s >= threshold:
             level += 1
         else:
@@ -202,6 +219,7 @@ def assess_island(
     source_Q: float,
     evacuation_dose_rate_sv_s: float = SHELTER_THRESHOLD_SV_S,
     action_concentration_bq_m3: float = ACTION_CONCENTRATION_BQ_M3,
+    dose_thresholds_sv_s: Iterable[float] | None = None,
 ) -> IslandAssessment:
     """Assess the radiological threat across an island of detected facilities.
 
@@ -221,6 +239,9 @@ def assess_island(
             :func:`containment_recommendation` call.
         action_concentration_bq_m3: contamination concentration (Bq/m³) that
             defines both the shelter trigger and the downwind isopleth extent.
+        dose_thresholds_sv_s: the threat-band edges (Sv/s). Defaults to the
+            module literal; ``canonical_metrics`` passes the config-declared
+            ``mission.threat.band_edges_sv_s`` so the posture is scenario-driven.
 
     Returns:
         An :class:`IslandAssessment` aggregating the per-facility results. With
@@ -233,7 +254,11 @@ def assess_island(
     worst_level: str = THREAT_LEVELS[0]
     for facility in facilities_list:
         rate, concentration = _facility_dose_rate(facility, meteo, source_Q=source_Q)
-        level = facility_threat_level(rate, containment=facility.containment)
+        level = facility_threat_level(
+            rate,
+            containment=facility.containment,
+            dose_thresholds=dose_thresholds_sv_s,
+        )
         levels[facility.name] = level
         actions[facility.name] = containment_recommendation(
             rate,

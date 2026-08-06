@@ -88,7 +88,7 @@ converts through `A = λN`; plus `transient_equilibrium_ratio()`,
 `activity_fraction_remaining()`, and `time_to_fraction()`.
 
 **`shielding.py`** — barriers. Mass-attenuation tables (`μ/ρ`, cm²/g) for lead,
-iron, concrete, and water over 0.1–2.0 MeV, plus densities.
+iron, concrete, and water over 0.05–3.0 MeV (bracketing every gamma line in the isotope library), plus densities.
 `mass_attenuation()` interpolates log-log between bracketing table points;
 `linear_attenuation_coefficient()` gives `μ = (μ/ρ)ρ`; then
 `transmission_factor()`, `half_value_layer()`, `tenth_value_layer()`, and

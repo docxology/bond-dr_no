@@ -47,18 +47,28 @@ order-of-magnitude faithful and fully auditable — every one is a named constan
 in a named module, traceable to a cited source — but they are approximations,
 not a licensed consequence-assessment dataset.
 
-Three specific caveats bound the results. The detector model synthesizes
+Several specific caveats bound the results. The detector model synthesizes
 Gaussian photopeaks on a flat continuum with no Compton edge, no escape peaks,
 no true-coincidence summing, and no pulse pile-up, so the identification problem
-is easier than a real measurement. The Gaussian plume is a steady-state,
-flat-terrain, constant-wind idealisation valid for short range and neutral-ish
-conditions; it has no deposition term, so it does not conserve mass against the
-ground, and only the near-field ($x \le 1$ km) vertical-coefficient branch is
-implemented, so $\sigma_z$ past a kilometre is an extrapolation of a fit that
-was published for shorter range. And the threat banding is a declared decision
-rule, not a regulatory
-standard — the band edges are constants in `island_assessment.py`, chosen to be
-legible rather than derived from any published intervention level.
+is easier than a real measurement; a genuine doublet finer than the
+detector-separation window is merged, and although the merge is now reported in
+the detected-peak record rather than silently dropped, the two lines are not
+individually deconvolved. The Gaussian plume is a steady-state, flat-terrain,
+constant-wind idealisation valid for short range and neutral-ish conditions; it
+has no deposition term, so it does not conserve mass against the ground, and
+only the near-field ($x \le 1$ km) vertical-coefficient branch is implemented,
+so $\sigma_z$ past a kilometre is an extrapolation of a fit that was published
+for shorter range. Mass-attenuation interpolation is log-log between table
+points and is not valid across photoelectric absorption edges (notably lead's
+~88 keV K-edge) — low-energy shielding estimates are correspondingly coarse. And
+the threat banding is a declared decision rule, not a regulatory standard: the
+band edges and evacuation threshold are chosen to be legible rather than derived
+from any published intervention level. They are now declared scenario
+(``mission.threat`` in `manuscript/config.yaml`), loaded and validated by
+`src/dr_no/scenario.py` and threaded through `canonical_metrics`, so they carry
+the same provenance as every other scenario number and a config edit moves the
+posture — but being config-declared does not make them a protective-action
+guideline.
 
 The results are therefore directionally correct and fully traceable, and should
 be read as a screening pass rather than as a substitute for a licensed

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -120,11 +120,21 @@ def total_gamma_lines() -> int:
 
 @dataclass(frozen=True)
 class DetectedPeak:
-    """A peak located on a measured spectrum."""
+    """A peak located on a measured spectrum.
+
+    ``merged_energies`` lists the energies (keV) of candidate channels that
+    were collapsed into this peak because they sat closer than
+    ``min_separation_keV`` and were reported as a single line. It is empty for
+    an isolated peak and non-empty when a genuine doublet (or wider multiplet)
+    was merged — so a collapsed multiplet is visible to the caller instead of
+    being silently reported as one clean line. ``energy_keV`` is the strongest
+    (highest net count) member's energy.
+    """
 
     energy_keV: float
     net_counts: float
     snr: float
+    merged_energies: tuple[float, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -253,13 +263,22 @@ def detect_peaks(
                     )
                 )
 
-    # Collapse near-duplicate peaks; keep the strongest in each cluster.
+    # Collapse near-duplicate peaks; keep the strongest in each cluster, but
+    # record every member absorbed so a collapsed multiplet stays visible.
     candidates.sort(key=lambda p: p.energy_keV)
     merged: list[DetectedPeak] = []
     for peak in candidates:
         if merged and peak.energy_keV - merged[-1].energy_keV < min_separation_keV:
-            if peak.net_counts > merged[-1].net_counts:
-                merged[-1] = peak
+            survivor = peak if peak.net_counts >= merged[-1].net_counts else merged[-1]
+            absorbed = merged[-1] if peak.net_counts >= merged[-1].net_counts else peak
+            merged[-1] = replace(
+                survivor,
+                merged_energies=tuple(
+                    sorted(
+                        {*survivor.merged_energies, *absorbed.merged_energies, absorbed.energy_keV}
+                    )
+                ),
+            )
         else:
             merged.append(peak)
 

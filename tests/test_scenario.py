@@ -91,6 +91,7 @@ def test_missing_config_file_raises(tmp_path: Path) -> None:
         "shielding_probe",
         "external_dose_probe",
         "action_concentration_bq_m3",
+        "threat",
     ],
 )
 def test_every_required_mission_key_is_enforced(tmp_path: Path, key: str) -> None:
@@ -301,3 +302,62 @@ def test_specs_are_constructible_directly() -> None:
 def test_scenario_from_config_rejects_non_mapping_root() -> None:
     with pytest.raises(TypeError, match="must be a mapping"):
         MissionScenario.from_config("not a mapping")
+
+
+# --- C3 (round-2, 2026-08-06): threat thresholds are validated on load ---------
+
+
+@pytest.mark.parametrize(
+    "mutate, match",
+    [
+        (lambda t: t.update(band_edges_sv_s=[1.0e-11, 1.0e-9, 1.0e-7]), "exactly 4"),
+        (
+            lambda t: t.update(band_edges_sv_s=[1.0e-11, 1.0e-9, -1.0e-7, 1.0e-5]),
+            "must be positive",
+        ),
+        (
+            lambda t: t.update(band_edges_sv_s=[1.0e-5, 1.0e-9, 1.0e-7, 1.0e-11]),
+            "strictly ascending",
+        ),
+        (lambda t: t.update(shelter_dose_rate_sv_s=0.0), "shelter_dose_rate_sv_s must be positive"),
+    ],
+)
+def test_invalid_threat_thresholds_raise(tmp_path: Path, mutate: object, match: str) -> None:
+    """A malformed ``mission.threat`` block must fail closed, never default."""
+    config = _raw_config()
+    mutate(config["mission"]["threat"])
+    with pytest.raises((ValueError, TypeError), match=match):
+        load_scenario(_write(tmp_path, config))
+
+
+def test_threat_band_edges_not_a_list_raises(tmp_path: Path) -> None:
+    config = _raw_config()
+    config["mission"]["threat"]["band_edges_sv_s"] = 1.0e-11
+    with pytest.raises(TypeError, match="must be a list"):
+        load_scenario(_write(tmp_path, config))
+
+
+def test_threat_spec_surfaces_in_scenario() -> None:
+    """The loaded scenario exposes the declared thresholds."""
+    scenario = load_scenario()
+    assert tuple(scenario.threat.band_edges_sv_s) == (1.0e-11, 1.0e-9, 1.0e-7, 1.0e-5)
+    assert scenario.threat.shelter_dose_rate_sv_s == 1.0e-9
+
+
+def test_negative_activity_is_rejected_at_load(tmp_path: Path) -> None:
+    """A negative declared activity must fail closed, never corrupt arithmetic.
+
+    Round-2 hostile review: activities were type-checked but not range-checked,
+    so a planted negative value in a facility or the source mixture could have
+    silently produced a wrong dose or threat band. The loader now rejects it.
+    """
+    config = _raw_config()
+    config["mission"]["source_activities_bq"]["Cs-137"] = -1.0
+    with pytest.raises(ValueError, match="must be non-negative"):
+        load_scenario(_write(tmp_path, config))
+
+
+def test_zero_activity_is_accepted_at_load() -> None:
+    """0 Bq is a legitimate absent-activity placeholder (exercises the skip)."""
+    scenario = load_scenario()
+    assert scenario is not None

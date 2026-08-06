@@ -42,7 +42,7 @@ claims:
     source: "src/dr_no/spectrum_processing.py::minimum_detectable_activity"
     verified: true
   - id: "shielding-materials"
-    claim: "real mass-attenuation tables for lead, iron, concrete, water (0.1-2.0 MeV)"
+    claim: "real mass-attenuation tables for lead, iron, concrete, water (0.05-3.0 MeV), bracketing every isotope-library gamma line"
     source: "src/dr_no/shielding.py::MASS_ATTENUATION_CM2_G"
     verified: true
   - id: "single-source-metrics"

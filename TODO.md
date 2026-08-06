@@ -315,3 +315,119 @@ git status --short   # clean after commit
 
 If a gate could not be run, say so rather than reporting the last number you
 read.
+
+
+---
+
+## Round-2 (2026-08-06)
+
+Verified state measured **this session** on this tree (commit ahead of the
+round-1 `f5fa300`), Python 3.14.6: **345 tests collected, 345 passed, 0 failed,
+0 skipped; `src/` line+branch coverage 100.00%** (`uv run pytest tests/
+--cov=src --cov-report=term-missing`). Ruff check, ruff format --check, and
+mypy on `src/` + `scripts/` all clean; the template-lineage scan returns
+nothing. This resolves TODO items **C1, C2, C3, V1, V3, and D1** below (each
+recorded in its own bullet). V2, V4, D2, and E1–E4 remain open as listed.
+
+### Fixed this round (each with a regression/negative-control test)
+
+- **C1 — shielding table could not cover the library's highest-energy line**
+  (Tl-208 @ 2614.53 keV): extended `MASS_ATTENUATION_CM2_G` to 0.05–3.0 MeV
+  for all four materials (representative NIST-XCOM values, still log-log
+  interpolated) and moved `_MAX_ENERGY_MEV` (`src/dr_no/shielding.py`). Two new
+  tests — `test_every_library_gamma_line_is_covered_by_the_attenuation_table`
+  and `test_library_hottest_line_is_covered_and_finite` in
+  `tests/test_shielding.py` — iterate every gamma line of every isotope and
+  assert `mass_attenuation()` returns a finite positive value, so a future
+  higher-energy line that falls off the table fails the build. The OLD defect
+  regression `test_mass_attenuation_raises_outside_the_table_range` still passes
+  (its 10 MeV probe is above the new ceiling).
+
+- **C2 — `detect_peaks()` silently reported a doublet as one line**:
+  `DetectedPeak` now carries `merged_energies` and the merge loop records every
+  absorbed member instead of discarding it (`src/dr_no/isotope_profiles.py`).
+  `test_detect_peaks_reports_merged_doublet` synthesizes two peaks 2 keV apart
+  inside the 5 keV window and asserts the survivor carries the absorbed member;
+  `test_detect_peaks_reports_merge_when_stronger_arrives_second` pins the other
+  merge orientation; `test_detect_peaks_filters_subthreshold_local_maxima` pins
+  the previously-unreached sub-SNR branch.
+
+- **C3 — threat band edges and shelter threshold were Python literals** in
+  `island_assessment.py`, breaching the package's scenario invariant. They are
+  now declared under `mission.threat` in `manuscript/config.yaml` (`band_edges_sv_s`,
+  `shelter_dose_rate_sv_s`), loaded and validated by `src/dr_no/scenario.py`
+  (new `ThreatSpec`), and threaded through `canonical_metrics` →
+  `assess_island` → `facility_threat_level`. Binding tests:
+  `test_declared_threat_band_edges_drive_island_posture`,
+  `test_threat_config_file_edit_reaches_the_posture`,
+  `test_declared_shelter_threshold_drives_evacuation_recommendation` (all in
+  `tests/test_canonical.py`), plus load-time validation tests in
+  `tests/test_scenario.py` (wrong edge count, non-positive, non-ascending,
+  non-list, non-positive shelter). `test_every_required_mission_key_is_enforced`
+  now includes `threat`.
+
+- **V1 — the claim ledger was unbound**: `data/claim_ledger.yaml` marked ten
+  claims `verified: true` and nothing read it. New `tests/test_claim_ledger.py`
+  loads the ledger and resolves every `source:` against the live tree by AST (a
+  `module.py::symbol` must define that symbol; a `tests/…::test_…` must define
+  that test; a bare path must exist). All ten resolve; a renamed symbol, deleted
+  test, or removed file now fails the build.
+
+- **V3 — seven code paths were unreached**; now every one is covered and the
+  `--cov-report=term-missing` module table is **100.00% everywhere**. New tests:
+  `_fwhm_at` non-positive resolution raise, zero-activity synthesize skip,
+  empty-spectrum `detect_peaks` guard, sub-threshold peak filter, both merge
+  orientations, `time_to_fraction` non-positive half-life raise
+  (`tests/test_decay_chain.py`), and an explicit `chain_name` decay figure
+  (`tests/test_figures.py`).
+
+- **Addition (hostile review) — negative activities were type-checked but not
+  range-checked**. `_as_activities` in `src/dr_no/scenario.py` now rejects a
+  negative declared activity at load (a planted negative value previously could
+  flow into facility dose/threat arithmetic); `test_negative_activity_is_rejected_at_load`
+  pins it. Zero remains a legitimate absent-activity placeholder.
+
+### Manuscript improvements
+
+- Methodology §2.3 now documents the *scenario-declared* threat band edges
+  (`THREAT_BAND_EDGES_SV_S_CSV`) and evacuation dose rate
+  (`SHELTER_DOSE_RATE_SV_S`) as tokens, and that a config edit moves the posture.
+- Setup §5.1 corrected the shielding table span from "0.1–2.0 MeV" to
+  "0.05–3.0 MeV" and lists the declared threat thresholds.
+- Scope & limitations §7.3 rewritten: notes the doublet merge is now visible
+  (not silently dropped), adds the low-energy/pass-through-edge
+  (lead ~88 keV K-edge) attenuation caveat, and states the band edges are
+  config-declared decision rules (with provenance) rather than unsourced Python
+  literals — while still not claiming they are a protective-action guideline.
+- `docs/architecture.md` shielding-row span corrected to 0.05–3.0 MeV.
+- Manifold variables gained `THREAT_BAND_EDGES_SV_S_CSV` and
+  `SHELTER_DOSE_RATE_SV_S` tokens (both consumed by sections: no orphan tokens).
+
+### Gate numbers this round
+
+- pytest: **345 passed, 0 failed, 0 skipped; coverage 100.00%** (`--cov-fail-under=90`)
+- ruff check: clean · ruff format --check: clean (45 files) · mypy: clean (19 files)
+- Regeneration: two consecutive `z_generate_manuscript_variables.py` runs are
+  byte-identical (same SHA-256 of all JSON+MD artifacts under `output/`).
+- `docs/_generated/COUNTS.md` regenerated by the new `scripts/z_generate_counts.py`
+  (D1) from a real run: 345 passed / 100.00%.
+
+### What this round deliberately did NOT do (left for a future round)
+
+- **V2** — Pasquill–Gifford reference values still live in
+  `tests/test_plume_model.py` rather than a citable data file; the coefficients
+  are transcription-pinned but the reference numbers carry no external
+  page-level provenance.
+- **V4** — `dr_no` still has no package-local cross-film chain binding test
+  (the harness lives in `_omnibus/` outside this tree).
+- **D1 residual** — `scripts/z_generate_counts.py` writes COUNTS.md from a real
+  run, but an *in-suite* test asserting the committed file equals a fresh
+  measurement was intentionally not added: it would re-run the whole suite
+  inside the suite (changing the very count it validates) and recurse. Left as
+  a fleet-level docs-gate responsibility.
+- **D2** — dose coefficients and gamma constants are cited as blocks, not per
+  row; a reader cannot audit one constant in isolation without re-deriving the
+  whole table.
+- **E1–E4** — Compton continuum (E1), escape-peak/summing (E2), plume
+  deposition (E3), and `bond-utilities` provenance delegation (E4) remain real
+  extension work, unchanged from their earlier sections above.

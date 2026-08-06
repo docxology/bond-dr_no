@@ -26,7 +26,7 @@ asserting the metrics move.
   ({{DECAY_CHAIN_NAMES_CSV}}); {{DECAY_CHAIN_PROJECTED}} projected
   {{DECAY_ELAPSED_DAYS}} days after release.
 * **Shielding**: {{NUM_SHIELDING_MATERIALS}} mass-attenuation tables
-  ({{SHIELDING_MATERIALS_CSV}}) over 0.1–2.0 MeV, interpolated log-log; the
+  ({{SHIELDING_MATERIALS_CSV}}) over 0.05–3.0 MeV, interpolated log-log; the
   report's barrier is {{SHIELD_THICKNESS_CM}} cm of {{SHIELD_MATERIAL}} at
   {{SHIELD_ENERGY_KEV}} keV.
 * **External dose probe**: {{DOSE_PROBE_ISOTOPE}} at
@@ -35,6 +35,9 @@ asserting the metrics move.
   {{PLUME_WIND_SPEED_M_S}} m/s, stability class {{PLUME_STABILITY_CLASS}},
   release height {{PLUME_RELEASE_HEIGHT_M}} m; contamination action threshold
   {{ACTION_CONCENTRATION_BQ_M3}} Bq/m³.
+* **Threat thresholds**: {{NUM_THREAT_BANDS}} band edges
+  {{THREAT_BAND_EDGES_SV_S_CSV}} Sv/s; evacuation dose rate
+  {{SHELTER_DOSE_RATE_SV_S}} Sv/s.
 * **Facilities**: {{NUM_FACILITIES}} — {{FACILITY_NAMES_CSV}} (a breached dock
   compound and a contained load-out cave).
 

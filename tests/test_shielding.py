@@ -11,6 +11,7 @@ from dr_no.shielding import (
     MATERIALS,
     half_value_layer,
     linear_attenuation_coefficient,
+    mass_attenuation,
     required_shield_thickness,
     tenth_value_layer,
     transmission_factor,
@@ -110,7 +111,7 @@ def test_required_shield_thickness_validation() -> None:
 
 def test_error_branches() -> None:
     with pytest.raises(ValueError):
-        linear_attenuation_coefficient(0.05, "lead")  # below table range
+        linear_attenuation_coefficient(0.04, "lead")  # below the 0.05 floor
     with pytest.raises(ValueError):
         linear_attenuation_coefficient(5.0, "lead")  # above table range
     with pytest.raises(KeyError):
@@ -124,3 +125,47 @@ def test_error_branches() -> None:
 def test_linear_attenuation_unknown_material() -> None:
     with pytest.raises(KeyError):
         linear_attenuation_coefficient(0.662, "concrete_")
+
+
+# --- Round-2 (2026-08-06): the attenuation table must cover every library line ---
+# C1 in TODO.md: the table's ceiling was 2.0 MeV, so shielding could not be
+# computed for Tl-208's 2614.53 keV line — the library's strongest high-energy
+# emitter — without raising. The table now extends to 3.0 MeV; these tests pin
+# that the ceiling brackets every gamma line in the isotope library and that
+# mass_attenuation returns a finite, positive value for each.
+
+
+def test_every_library_gamma_line_is_covered_by_the_attenuation_table() -> None:
+    """No isotope line may fall off the end of the mass-attenuation table.
+
+    Before the round-2 fix this raised for Tl-208 at 2614.53 keV
+    (``ValueError: energy 2.61453 MeV is outside the table range [0.1, 2.0]``),
+    silently denying a shielding answer for the library's strongest high-energy
+    emitter. Iterating every line for every material makes that regression fail.
+    """
+    from dr_no.isotope_profiles import isotope_library, total_gamma_lines
+
+    assert total_gamma_lines() >= 1
+    line_mev_list: list[float] = []
+    for profile in isotope_library().values():
+        for energy_kev, _ in profile.gamma_lines:
+            line_mev_list.append(energy_kev / 1000.0)
+    assert line_mev_list  # non-empty library
+
+    for material in MATERIALS:
+        for energy_mev in line_mev_list:
+            value = mass_attenuation(energy_mev, material)
+            assert value > 0.0, f"non-positive mu/rho for {material} at {energy_mev} MeV"
+            assert value < 1e6, f"implausibly large mu/rho: {value}"
+
+
+def test_library_hottest_line_is_covered_and_finite() -> None:
+    """Tl-208's 2614.53 keV line specifically: the C1 motivating case."""
+    from dr_no.isotope_profiles import isotope_library
+
+    tl = isotope_library()["Tl-208"]
+    hot_mev = max(e for e, _ in tl.gamma_lines) / 1000.0
+    assert hot_mev == pytest.approx(2.61453)
+    for material in MATERIALS:
+        value = mass_attenuation(hot_mev, material)
+        assert 0.0 < value < 1.0, f"{material}: {value}"

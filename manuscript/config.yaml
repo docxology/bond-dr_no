@@ -102,3 +102,9 @@ mission:
       isotopes:
         I-131: 10000000.0
   action_concentration_bq_m3: 1000.0
+  # Radiological decision thresholds. The four band edges separate the five
+  # threat bands (LOW < MODERATE < HIGH < SEVERE < CRITICAL); shelter_dose_rate
+  # is the effective dose rate at or above which evacuation is recommended.
+  threat:
+    band_edges_sv_s: [1.0e-11, 1.0e-9, 1.0e-7, 1.0e-5]
+    shelter_dose_rate_sv_s: 1.0e-9

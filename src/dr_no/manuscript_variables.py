@@ -99,6 +99,10 @@ def generate_variables(
         "SHIELDING_MATERIALS_CSV": ", ".join(MATERIALS),
         "NUM_THREAT_BANDS": str(len(THREAT_LEVELS)),
         "THREAT_BANDS_CSV": ", ".join(THREAT_LEVELS),
+        "THREAT_BAND_EDGES_SV_S_CSV": ", ".join(
+            _sci(edge) for edge in scenario.threat.band_edges_sv_s
+        ),
+        "SHELTER_DOSE_RATE_SV_S": _sci(scenario.threat.shelter_dose_rate_sv_s),
         "LIBRARY_MIN_LINE_KEV": f"{_library_line_bounds()[0]:.2f}",
         "LIBRARY_MAX_LINE_KEV": f"{_library_line_bounds()[1]:.2f}",
         # --- declared scenario (mission: block of config.yaml) ---------------

@@ -76,9 +76,15 @@ $$ \dot{D} = C \sum_{k} f_k\, \mathrm{DCF}_k \, \dot{V}.$$
 
 The dose rate is mapped onto a {{NUM_THREAT_BANDS}}-band threat scale
 ({{THREAT_BANDS_CSV}}); a facility whose containment is breached is escalated
-one band. The island report records the worst threat and, for each facility, a
-containment action (none / shelter / evacuation). Shelter is triggered at the
-declared action concentration of {{ACTION_CONCENTRATION_BQ_M3}} Bq/m³.
+one band. The band edges themselves are declared scenario, not Python literals:
+they live under the ``mission.threat`` block of ``manuscript/config.yaml`` as
+{{THREAT_BAND_EDGES_SV_S_CSV}} Sv/s and are threaded into every facility's
+rating by ``canonical_metrics``, so a config edit genuinely moves the posture
+(`tests/test_canonical.py` binds it). The island report records the worst threat
+and, for each facility, a containment action (none / shelter / evacuation).
+Shelter is triggered at the declared action concentration of
+{{ACTION_CONCENTRATION_BQ_M3}} Bq/m³, and evacuation at a declared effective
+dose rate of {{SHELTER_DOSE_RATE_SV_S}} Sv/s.
 
 ## 2.4 Radioactive decay chains
 

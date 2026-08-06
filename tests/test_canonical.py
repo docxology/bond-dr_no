@@ -24,6 +24,7 @@ from dr_no.canonical import (
     detector_energy_grid,
     line_intensity,
 )
+from dr_no.island_assessment import THREAT_RANK
 from dr_no.isotope_profiles import DetectedPeak
 from dr_no.scenario import load_scenario
 
@@ -232,3 +233,78 @@ def test_metrics_quantified_line_matches_declaration() -> None:
     metrics = canonical_metrics(scenario)
     assert metrics["quantified_line"] == scenario.quantified_line
     assert metrics["quantified_line_energy_kev"] in scenario.calibration_lines_keV
+
+
+# --- C3 (round-2, 2026-08-06): threat band edges are scenario, not literals ---
+#
+# Before the round-2 fix the threat-band edges and shelter threshold were Python
+# literals in island_assessment.py, breaching the package's own invariant that
+# every scenario number lives in manuscript/config.yaml. They are now declared
+# under mission.threat and threaded through canonical_metrics. These tests bind
+# them: editing a band edge must move the island posture.
+
+
+def test_declared_threat_band_edges_drive_island_posture() -> None:
+    """Raising the first band edge above north_dock's dose rate drops its band.
+
+    north_dock sits at ~9.6e-11 Sv/s (breached). With the default first edge at
+    1e-11 it lands in HIGH; raising that edge above its rate drops the island
+    posture to MODERATE — proving the posture is a function of the *declared*
+    thresholds, not a fixed constant.
+    """
+    scenario = load_scenario()
+    assert canonical_metrics(scenario)["island_threat"] == "HIGH"
+    looser = replace(
+        scenario,
+        threat=replace(
+            scenario.threat,
+            band_edges_sv_s=(5.0e-10, 1.0e-9, 1.0e-7, 1.0e-5),
+        ),
+    )
+    assert canonical_metrics(looser)["island_threat"] == "MODERATE"
+
+
+def test_threat_config_file_edit_reaches_the_posture(tmp_path: Path) -> None:
+    """End-to-end: editing mission.threat in the YAML moves the island posture."""
+    original = (PACKAGE_ROOT / "manuscript" / "config.yaml").read_text(encoding="utf-8")
+    assert "band_edges_sv_s: [1.0e-11, 1.0e-9, 1.0e-7, 1.0e-5]" in original
+    edited = tmp_path / "config.yaml"
+    edited.write_text(
+        original.replace(
+            "band_edges_sv_s: [1.0e-11, 1.0e-9, 1.0e-7, 1.0e-5]",
+            "band_edges_sv_s: [5.0e-10, 1.0e-9, 1.0e-7, 1.0e-5]",
+        ),
+        encoding="utf-8",
+    )
+    scenario = load_scenario(edited)
+    assert scenario.threat.band_edges_sv_s[0] == 5.0e-10
+    assert canonical_metrics(scenario)["island_threat"] == "MODERATE"
+
+
+def test_declared_shelter_threshold_drives_evacuation_recommendation() -> None:
+    """The shelter/evacuation threshold is scenario-driven, not a literal."""
+    scenario = load_scenario()
+    # With the default shelter rate of 1e-9 Sv/s no facility evacuates.
+    assert all(
+        a != "evacuation" for a in canonical_metrics(scenario)["containment_actions"].values()
+    )
+    # Lowering the threshold to a hair below north_dock's rate forces evacuation.
+    strict = replace(
+        scenario,
+        threat=replace(scenario.threat, shelter_dose_rate_sv_s=1.0e-11),
+    )
+    actions = canonical_metrics(strict)["containment_actions"]
+    assert actions.get("north_dock") == "evacuation"
+
+
+def test_facility_threat_level_accepts_config_thresholds() -> None:
+    """The unit level respects an explicit threshold tuple."""
+    from dr_no.island_assessment import facility_threat_level
+
+    default = facility_threat_level(1e-10, containment="contained")
+    raised = facility_threat_level(
+        1e-10, containment="contained", dose_thresholds=(5e-10, 1e-9, 1e-7, 1e-5)
+    )
+    assert THREAT_RANK[raised] < THREAT_RANK[default]
+    with pytest.raises(ValueError, match="expected 4 dose thresholds"):
+        facility_threat_level(1e-10, dose_thresholds=(1e-9,))

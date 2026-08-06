@@ -40,3 +40,10 @@ def test_render_all(tmp_path: Path) -> None:
 
 def test_figures_dir_is_configured() -> None:
     assert FIGURES_DIR.name == "figures"
+
+
+def test_plot_decay_curves_explicit_chain(tmp_path: Path) -> None:
+    """The explicit ``chain_name`` branch (non-None) renders the same figure."""
+    out = plot_decay_curves(chain_name="Cs-137/Ba-137m", output_path=tmp_path / "decay2.png")
+    assert out.exists()
+    assert out.stat().st_size > 0

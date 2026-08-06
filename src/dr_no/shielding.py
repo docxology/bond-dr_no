@@ -10,7 +10,7 @@ follows the exponential law
 with the linear attenuation coefficient :math:`\\mu` built from a real
 mass-attenuation table :math:`\\mu/\\rho` (cm²/g) and material density
 :math:`\\rho` (g/cm³). The table holds representative NIST-XCOM-style values
-for lead, iron, concrete, and water across the 0.1–2.0 MeV range, interpolated
+for lead, iron, concrete, and water across the 0.05–3.0 MeV range, interpolated
 log-log in energy.
 
 Derived quantities: transmission factors, half-value and tenth-value layers,
@@ -36,12 +36,54 @@ __all__ = [
 ]
 
 #: Representative mass attenuation coefficients mu/rho (cm²/g) by material and
-#: photon energy (MeV) — NIST XCOM-style values.
+#: photon energy (MeV) — representative NIST XCOM-style values (Hubbell &
+#: Seltzer, `nistxcom`), spanning 0.1–3.0 MeV so the table covers every gamma
+#: line in the isotope library, including Tl-208's 2614.53 keV peak.
 MASS_ATTENUATION_CM2_G: dict[str, dict[float, float]] = {
-    "lead": {0.1: 5.55, 0.5: 0.163, 0.662: 0.113, 1.0: 0.071, 1.25: 0.057, 2.0: 0.0457},
-    "iron": {0.1: 0.372, 0.5: 0.0841, 0.662: 0.0775, 1.0: 0.0599, 1.25: 0.0528, 2.0: 0.0424},
-    "concrete": {0.1: 0.1706, 0.5: 0.0872, 0.662: 0.0786, 1.0: 0.0635, 1.25: 0.0574, 2.0: 0.0453},
-    "water": {0.1: 0.1706, 0.5: 0.0967, 0.662: 0.0859, 1.0: 0.0706, 1.25: 0.0628, 2.0: 0.0493},
+    "lead": {
+        0.05: 8.04,
+        0.1: 5.55,
+        0.5: 0.163,
+        0.662: 0.113,
+        1.0: 0.071,
+        1.25: 0.057,
+        2.0: 0.0457,
+        2.5: 0.0425,
+        3.0: 0.0417,
+    },
+    "iron": {
+        0.05: 1.47,
+        0.1: 0.372,
+        0.5: 0.0841,
+        0.662: 0.0775,
+        1.0: 0.0599,
+        1.25: 0.0528,
+        2.0: 0.0424,
+        2.5: 0.0408,
+        3.0: 0.0395,
+    },
+    "concrete": {
+        0.05: 0.317,
+        0.1: 0.1706,
+        0.5: 0.0872,
+        0.662: 0.0786,
+        1.0: 0.0635,
+        1.25: 0.0574,
+        2.0: 0.0453,
+        2.5: 0.0438,
+        3.0: 0.0419,
+    },
+    "water": {
+        0.05: 0.227,
+        0.1: 0.1706,
+        0.5: 0.0967,
+        0.662: 0.0859,
+        1.0: 0.0706,
+        1.25: 0.0628,
+        2.0: 0.0493,
+        2.5: 0.0480,
+        3.0: 0.0459,
+    },
 }
 
 #: Material densities (g/cm³).
@@ -54,9 +96,14 @@ MATERIAL_DENSITY_G_CM3: dict[str, float] = {
 
 MATERIALS: tuple[str, ...] = ("lead", "iron", "concrete", "water")
 
-#: Energy bounds of the attenuation table (MeV).
-_MIN_ENERGY_MEV = 0.1
-_MAX_ENERGY_MEV = 2.0
+#: Energy bounds of the attenuation table (MeV). The range 0.05–3.0 brackets
+#: every gamma line in the isotope library, from Am-241 at 59.54 keV up to
+#: Tl-208 at 2614.53 keV; ``mass_attenuation`` hard-rejects anything beyond it
+#: rather than extrapolating. Low-energy attenuation is coarse (and not valid
+#: across photoelectric absorption edges, e.g. lead's ~88 keV K-edge) — a stated
+#: screening-model limitation, not a silent fallback.
+_MIN_ENERGY_MEV = 0.05
+_MAX_ENERGY_MEV = 3.0
 
 
 def mass_attenuation(energy_mev: float, material: str) -> float:

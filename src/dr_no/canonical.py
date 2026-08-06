@@ -251,6 +251,8 @@ def canonical_metrics(scenario: MissionScenario | None = None) -> dict[str, Any]
         meteo,
         source_Q=spec.plume.source_Q_bq_s,
         action_concentration_bq_m3=spec.action_concentration_bq_m3,
+        evacuation_dose_rate_sv_s=spec.threat.shelter_dose_rate_sv_s,
+        dose_thresholds_sv_s=spec.threat.band_edges_sv_s,
     )
 
     return {

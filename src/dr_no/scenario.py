@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,7 @@ __all__ = [
     "MissionScenario",
     "PlumeSpec",
     "ShieldingProbeSpec",
+    "ThreatSpec",
     "load_scenario",
 ]
 
@@ -94,14 +96,23 @@ def _as_str(value: Any, where: str) -> str:
 
 
 def _as_activities(value: Any, where: str) -> dict[str, float]:
-    """Coerce an ``isotope -> activity`` mapping, validating every entry."""
+    """Coerce an ``isotope -> activity`` mapping, validating every entry.
+
+    Activities are non-negative (0 Bq is a legitimate "absent" placeholder, so
+    the zero-activity skip is exercised, but a *negative* activity is
+    unphysical and would silently corrupt dose/identification arithmetic).
+    """
     mapping = _as_mapping(value, where)
     if not mapping:
         raise ValueError(f"mission config section {where!r} must declare at least one isotope")
-    return {
-        _as_str(name, f"{where}.key"): _as_float(act, f"{where}.{name}")
-        for name, act in mapping.items()
-    }
+    result: dict[str, float] = {}
+    for name, act in mapping.items():
+        _as_str(name, f"{where}.key")
+        value = _as_float(act, f"{where}.{name}")
+        if value < 0.0:
+            raise ValueError(f"mission config activity {where}.{name} must be non-negative")
+        result[_as_str(name, f"{where}.key")] = value
+    return result
 
 
 @dataclass(frozen=True)
@@ -307,6 +318,62 @@ class DosePropeSpec:
 
 
 @dataclass(frozen=True)
+class ThreatSpec:
+    """The radiological decision thresholds governing the island threat bands.
+
+    These are scenario parameters, not Python literals: the band edges that
+    separate the five threat levels and the dose-rate that triggers an
+    evacuation recommendation are declared in the ``mission.threat`` block of
+    ``manuscript/config.yaml`` and validated here. ``island_assessment``
+    accepts them as parameters (pure domain, no config I/O), and
+    ``canonical_metrics`` threads them from this spec into the assessment, so
+    editing a threshold in config moves the computed island posture.
+    """
+
+    band_edges_sv_s: tuple[float, ...]
+    shelter_dose_rate_sv_s: float
+
+    def __post_init__(self) -> None:
+        if len(self.band_edges_sv_s) != 4:
+            raise ValueError(
+                "threat.band_edges_sv_s must declare exactly 4 boundaries to "
+                "separate the 5 threat bands"
+            )
+        if any(edge <= 0 for edge in self.band_edges_sv_s):
+            raise ValueError("threat.band_edges_sv_s entries must be positive")
+        if any(high <= low for low, high in pairwise(self.band_edges_sv_s)):
+            raise ValueError("threat.band_edges_sv_s must be strictly ascending")
+        if self.shelter_dose_rate_sv_s <= 0:
+            raise ValueError("threat.shelter_dose_rate_sv_s must be positive")
+
+    @classmethod
+    def from_config(cls, raw: Any) -> ThreatSpec:
+        """Build a threat spec from the ``mission.threat`` config section."""
+        where = "mission.threat"
+        section = _as_mapping(raw, where)
+        edges_raw = _require(section, "band_edges_sv_s", where)
+        if not isinstance(edges_raw, list):
+            raise TypeError(
+                "mission config section 'mission.threat.band_edges_sv_s' must be a list"
+            )
+        return cls(
+            band_edges_sv_s=tuple(
+                _as_float(edge, f"{where}.band_edges_sv_s[{i}]") for i, edge in enumerate(edges_raw)
+            ),
+            shelter_dose_rate_sv_s=_as_float(
+                _require(section, "shelter_dose_rate_sv_s", where), where
+            ),
+        )
+
+    def as_payload(self) -> dict[str, object]:
+        """JSON-safe mapping used for the provenance hash."""
+        return {
+            "band_edges_sv_s": list(self.band_edges_sv_s),
+            "shelter_dose_rate_sv_s": self.shelter_dose_rate_sv_s,
+        }
+
+
+@dataclass(frozen=True)
 class MissionScenario:
     """The complete deterministic CRAB KEY scenario, loaded from config."""
 
@@ -321,6 +388,7 @@ class MissionScenario:
     shielding_probe: ShieldingProbeSpec
     external_dose_probe: DosePropeSpec
     action_concentration_bq_m3: float
+    threat: ThreatSpec
     quantified_line: str
 
     def __post_init__(self) -> None:
@@ -375,6 +443,7 @@ class MissionScenario:
             action_concentration_bq_m3=_as_float(
                 _require(section, "action_concentration_bq_m3", where), where
             ),
+            threat=ThreatSpec.from_config(_require(section, "threat", where)),
             quantified_line=_as_str(_require(section, "quantified_line", where), where),
         )
 
@@ -386,6 +455,7 @@ class MissionScenario:
             "plume": self.plume.as_payload(),
             "facilities": [facility.as_payload() for facility in self.facilities],
             "action_concentration_bq_m3": self.action_concentration_bq_m3,
+            "threat": self.threat.as_payload(),
             "decay_projection": {
                 "chain": self.decay_projection.chain,
                 "elapsed_days": self.decay_projection.elapsed_days,

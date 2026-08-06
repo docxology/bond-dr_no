@@ -210,3 +210,91 @@ def test_line_intensity_raises_for_an_isotope_with_no_lines(
     monkeypatch.setattr(canonical_module, "isotope_library", lambda: extended)
     with pytest.raises(ValueError, match="no gamma lines to quantify"):
         line_intensity("Nu-000", 100.0)
+
+
+def test_detect_peaks_reports_merged_doublet() -> None:
+    """A genuine doublet inside ``min_separation_keV`` stays visible, not one line.
+
+    C2 in TODO.md: before the round-2 fix, two photopeaks closer than 5 keV
+    were collapsed to the stronger one and the weaker was discarded silently —
+    a confidently wrong answer (one line) rather than an uncertain one. Now the
+    surviving peak carries the absorbed member's energy in ``merged_energies``.
+    """
+    from dr_no.isotope_profiles import _gaussian
+
+    energies = np.linspace(100.0, 200.0, 2001)
+    counts = np.full_like(energies, 50.0)
+    sigma = 0.5
+    for centre, amp in ((150.0, 3000.0), (152.0, 2000.0)):  # 2 keV apart
+        counts += amp * np.array([_gaussian(e, centre, sigma) for e in energies])
+
+    peaks = detect_peaks(energies, counts, min_separation_keV=5.0, background_level=50.0)
+
+    # Two local maxima within 5 keV collapse to one survivor.
+    assert len(peaks) == 1
+    peak = peaks[0]
+    assert abs(peak.energy_keV - 150.0) < 0.5  # the stronger member survives
+    # ...and the absorbed member is recorded, not erased.
+    assert any(abs(e - 152.0) < 0.1 for e in peak.merged_energies)
+
+    # An isolated peak reports no merge.
+    solo = detect_peaks(energies, np.full_like(energies, 50.0), background_level=50.0)
+    assert all(p.merged_energies == () for p in solo)
+
+
+# --- V3 (round-2, 2026-08-06): reach the previously uncovered branches ---------
+
+
+def test_fwhm_raises_on_non_positive_resolution() -> None:
+    """The detector-resolution guard must not be silently skipped."""
+    from dr_no.isotope_profiles import _fwhm_at
+
+    assert _fwhm_at(1332.5, 2.0) > 0.0
+    with pytest.raises(ValueError, match="must be positive"):
+        _fwhm_at(1332.5, 0.0)
+    with pytest.raises(ValueError, match="must be positive"):
+        _fwhm_at(1332.5, -1.0)
+
+
+def test_synthesize_spectrum_skips_zero_activity_isotope() -> None:
+    """An isotope declared at 0 Bq contributes nothing but does not abort."""
+    from dr_no.isotope_profiles import isotope_library
+
+    energies = np.linspace(20.0, 3000.0, 2000)
+    _, all_zeroed = synthesize_spectrum({"Cs-137": 0.0, "Co-60": 2.0e6}, energies=energies)
+    _, co_only = synthesize_spectrum({"Co-60": 2.0e6}, energies=energies)
+    assert "Cs-137" in isotope_library()
+    assert np.array_equal(all_zeroed, co_only)
+
+
+def test_detect_peaks_empty_spectrum_returns_empty() -> None:
+    """A zero-length counts array yields no peaks, not an error or a phantom."""
+    assert detect_peaks(np.array([]), np.array([])) == []
+
+
+def test_detect_peaks_filters_subthreshold_local_maxima() -> None:
+    """A local maximum whose SNR is below min_snr must be discarded."""
+    energies = np.arange(0.0, 10.0, 1.0)
+    counts = np.full_like(energies, 50.0)
+    counts[5] = 100.0  # net 50, snr 1.0 < default min_snr 3.0
+    assert detect_peaks(energies, counts, min_snr=3.0, background_level=50.0) == []
+    # Raise the SNR floor above it and the same bump is a peak.
+    bumped = detect_peaks(energies, counts, min_snr=0.5, background_level=50.0)
+    assert len(bumped) == 1
+    assert bumped[0].energy_keV == pytest.approx(5.0)
+
+
+def test_detect_peaks_reports_merge_when_stronger_arrives_second() -> None:
+    """Both merge orientations are visible (the trailing peak may be stronger)."""
+    from dr_no.isotope_profiles import _gaussian
+
+    energies = np.linspace(100.0, 200.0, 2001)
+    counts = np.full_like(energies, 50.0)
+    sigma = 0.5
+    # Leading (150) weaker, trailing (152) stronger: survivor is 152.
+    for centre, amp in ((150.0, 2000.0), (152.0, 3000.0)):
+        counts += amp * np.array([_gaussian(e, centre, sigma) for e in energies])
+    peaks = detect_peaks(energies, counts, min_separation_keV=5.0, background_level=50.0)
+    assert len(peaks) == 1
+    assert abs(peaks[0].energy_keV - 152.0) < 0.5
+    assert any(abs(e - 150.0) < 0.1 for e in peaks[0].merged_energies)

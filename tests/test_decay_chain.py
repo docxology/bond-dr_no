@@ -212,3 +212,13 @@ def test_bateman_degenerate_lambdas_raises() -> None:
     chain = DecayChain("deg", (Nuclide("A", 10.0), Nuclide("B", 10.0)))
     with pytest.raises(ValueError):
         populations_at_t(chain, 100.0, 1.0)
+
+
+def test_time_to_fraction_rejects_non_positive_half_life() -> None:
+    """time_to_fraction must not silently accept a non-positive half-life."""
+    with pytest.raises(ValueError, match="half-life must be positive"):
+        time_to_fraction(0.0, 0.5)
+    with pytest.raises(ValueError, match="half-life must be positive"):
+        time_to_fraction(-1.0, 0.5)
+    # Sanity: a valid call returns a finite positive time.
+    assert time_to_fraction(1.0, 0.5) == pytest.approx(1.0)  # one half-life
