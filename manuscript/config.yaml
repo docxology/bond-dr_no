@@ -1,6 +1,7 @@
 # CRAB KEY — Dr. No (1962) mission software · PROJECT BOND phase-2 film package
-# Local-only working tree; no remote, never push. Publication metadata follows
-# the fork contract but carries no DOI/remote fields (there is no online release).
+# Repository: https://github.com/docxology/bond-dr_no
+# Publication metadata follows the fork contract but carries no DOI yet — no
+# archival release has been minted for this package.
 
 paper:
   # `version` is the package version of record: pyproject.toml [project].version

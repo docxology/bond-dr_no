@@ -5,10 +5,10 @@ first; it is mandatory before any edit.
 
 ## 1. Scope
 
-Work only inside `projects/working/bond/dr_no/`. Never touch a sibling BOND
-package, the `bond/` root, or the template repo. This tree is **local-only**:
-there is no remote and nothing is ever pushed. Commit inside this repo only,
-with path-scoped commits.
+Work only inside this repo — `bond-dr_no`, upstream
+<https://github.com/docxology/bond-dr_no> (default branch `main`). Never touch a
+sibling BOND package or the template repo. Commit inside this repo only, with
+path-scoped commits.
 
 ## 2. Read order before editing
 
@@ -84,7 +84,7 @@ which and why.
 ## 7. Verification gate — run all of it before declaring done
 
 ```bash
-cd projects/working/bond/dr_no
+cd bond-dr_no
 
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/

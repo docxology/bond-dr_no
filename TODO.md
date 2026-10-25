@@ -7,12 +7,13 @@ quantification, Bateman decay projection, shielding attenuation, Gaussian plume
 dispersion, and inhalation dose, to a five-band island threat posture and a
 containment action. It exposes the frozen `bond_api` `MissionProvider` surface
 (slug `dr_no`) and hydrates every manuscript number as a token from one metric
-pass. **Verified state, measured 2026-08-05 on this tree (commit `6133ad2`,
-Python 3.14.6, darwin/arm64): 318 tests collected, 318 passed, 0 failed,
-0 skipped; `src/` line+branch coverage 99.02%** (`uv run pytest tests/
+pass. **Verified state: §Round-2 below** — 345 tests collected, 345 passed, 0
+failed, 0 skipped; `src/` line+branch coverage 100.00% (`uv run pytest tests/
 --cov=src --cov-report=term-missing`). Ruff check, ruff format --check, and
-mypy on `src/` + `scripts/` are all clean in the same session, and the
-template-lineage scan returns nothing.
+mypy on `src/` + `scripts/` are all clean in the same session, the
+template-lineage scan returns nothing, and
+[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md) carries the last
+measured counts.
 
 This file tracks only what is **not** done. What exists is described in
 [`README.md`](README.md) and [`docs/architecture.md`](docs/architecture.md).
@@ -261,8 +262,8 @@ dispersion coefficients are order-of-magnitude faithful, named, and traceable,
 interpolated log-log between table points. §7.3 states the results are a
 screening pass, not a substitute for a licensed consequence assessment.
 
-**L6. Local-only tree.** No remote, and nothing here is ever pushed. Commits are
-path-scoped to this directory.
+**L6. Repository.** Upstream `https://github.com/docxology/bond-dr_no`, default
+branch `main`. Commits are path-scoped to this directory.
 
 ### Standing constraints
 
@@ -289,14 +290,14 @@ path-scoped to this directory.
 The gate, and what a green run looks like on this tree:
 
 ```bash
-cd projects/working/bond/dr_no
+cd bond-dr_no
 
-# The gate — 318 passed, src/ coverage 99.02% (floor 90%)
+# The gate — 345 passed, src/ coverage 100.00% (floor 90%)
 uv run pytest tests/ --cov=src --cov-fail-under=90
 
 uv run ruff check src/ scripts/ tests/          # All checks passed!
-uv run ruff format --check src/ scripts/ tests/ # 43 files already formatted
-uv run mypy src/ scripts/                       # no issues in 18 source files
+uv run ruff format --check src/ scripts/ tests/ # 45 files already formatted
+uv run mypy src/ scripts/                       # no issues in 19 source files
 
 # Policy scans
 rg -n "template[_]code_project" . --glob '!uv.lock' --glob '!.git/**' || echo Clean

@@ -8,15 +8,15 @@ Read those before editing.
 
 ## Scope contract
 
-- Work **only** inside this directory. Never touch a sibling BOND package, the
-  `bond/` root, or the template repo.
-- **Local-only**: no remote, never push. Own git repo, path-scoped commits
-  (`git add -A` inside this repo only).
+- Work **only** inside this directory. Never touch a sibling BOND package or the
+  template repo.
+- Own git repo, upstream `https://github.com/docxology/bond-dr_no`, default
+  branch `main`; path-scoped commits (`git add -A` inside this repo only).
 
 ## Build
 
 ```bash
-cd projects/working/bond/dr_no
+cd bond-dr_no
 uv sync --extra dev
 ```
 

@@ -9,9 +9,9 @@ tags: [bond, film, radiation-forensics, isotope-identification, plume-dispersion
 
 # dr-no — CRAB KEY
 
-Project-scoped skill for the PROJECT BOND film package at
-`projects/working/bond/dr_no/` (film "Dr. No", 1962, mission codename
-CRAB KEY). Load this when working inside the package.
+Project-scoped skill for the PROJECT BOND film package in this repo
+(`bond-dr_no`, upstream <https://github.com/docxology/bond-dr_no>; film "Dr. No",
+1962, mission codename CRAB KEY). Load this when working inside the package.
 
 ## When to Use
 
@@ -21,7 +21,7 @@ CRAB KEY). Load this when working inside the package.
 - Implementing or verifying the BOND-API `MissionProvider` adapter and register
   integration.
 - Validating the guardrails (thin-orchestrator, no-mocks, ≥90% coverage,
-  determinism, zero lineage, local-only).
+  determinism, zero lineage, path-scoped commits).
 
 ## Quick Reference (from the package root)
 
@@ -65,7 +65,8 @@ uv run python scripts/z_generate_manuscript_variables.py   # hydrate {{TOKEN}}s
 - No mock framework, no RNG, no wall-clock in artifacts; fixed seed 42.
   Four declared `monkeypatch.setattr` substitutions are inventoried and gated
   in `tests/test_suite_hygiene.py`.
-- Local-only: no remote, never push; path-scoped commits in this repo only.
+- Path-scoped commits in this repo only; upstream is
+  `https://github.com/docxology/bond-dr_no` (default branch `main`).
 - `output/` is git-ignored (regenerable); z_generate + render keep it current.
 - Manuscript `{{TOKEN}}`s resolve from `src/dr_no/manuscript_variables.py`;
   the cross-ref gate scans `manuscript/[0-9]*.md` only (not SYNTAX.md).

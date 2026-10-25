@@ -10,5 +10,5 @@ Project-scoped skill bundle for the CRAB KEY (Dr. No) film package.
 
 ## Audience
 
-- Build/maintenance agents working inside `projects/working/bond/dr_no/`.
+- Build/maintenance agents working inside this repo (`bond-dr_no`).
 - Agents verifying the BOND-API `MissionProvider` adapter and guardrails.

@@ -3,8 +3,8 @@
 **Film:** Dr. No (1962) · **Mission codename:** CRAB KEY · **Discipline:**
 radiation / isotope forensics · **Version:** 0.3.0
 
-A PROJECT BOND suite package. **Local-only** working tree: no remote, never
-push. Scope is exactly this directory.
+A PROJECT BOND suite package. Upstream: <https://github.com/docxology/bond-dr_no>
+(default branch `main`). Scope is exactly this directory.
 
 ## The film, and what it maps onto
 
@@ -63,7 +63,7 @@ Every module in `src/dr_no/`, and what it computes:
 ## Quick start
 
 ```bash
-cd projects/working/bond/dr_no
+cd bond-dr_no
 uv sync --extra dev
 
 # The gate
@@ -124,7 +124,7 @@ on a missing or mistyped key rather than substituting a default, and
 | --- | --- |
 | `src/dr_no/` | the implementation (see the module table above) |
 | `tests/` | real-data suite; no mock framework, substitutions gated by `tests/test_suite_hygiene.py` |
-| `scripts/` | thin CLIs: `run_mission.py`, `z_generate_manuscript_variables.py` |
+| `scripts/` | thin CLIs: `run_mission.py`, `z_generate_manuscript_variables.py`, `z_generate_counts.py` |
 | `manuscript/` | the mission report, `config.yaml` (scenario of record), `references.bib` |
 | `docs/` | architecture, agent instructions, testing doctrine, live counts |
 | `output/` | regenerable figures, resolved manuscript, token map — disposable |

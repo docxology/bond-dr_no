@@ -79,4 +79,4 @@ ground reflection.
 ## Suite context
 
 The BOND suite documentation and the frozen `bond-api` mission protocol are
-internal to this local-only working tree and carry no external citation.
+internal to the PROJECT BOND working tree and carry no external citation.

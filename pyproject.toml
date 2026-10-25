@@ -1,6 +1,6 @@
 # Dr. No (1962) — CRAB KEY mission software
 # BOND suite phase-2 film package: radiation / isotope forensics.
-# Local-only working tree; no remote, never push.
+# Repository: https://github.com/docxology/bond-dr_no
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -32,7 +32,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+bond-api = { path = "../bond-api" }
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]

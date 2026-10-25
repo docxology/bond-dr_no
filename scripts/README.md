@@ -4,6 +4,7 @@
 | --- | --- |
 | `run_mission.py` | CLI wrapper over `dr_no.cli.main`; phases brief/recon/plan/execute/debrief/full/render |
 | `z_generate_manuscript_variables.py` | hydrates `{{TOKEN}}` map + resolved manuscript sections |
+| `z_generate_counts.py` | re-runs the gate and regenerates `docs/_generated/COUNTS.md` |
 
 All business logic lives in `src/`. Scripts only bootstrap `src/` onto
 `sys.path` and forward. Keep them thin.

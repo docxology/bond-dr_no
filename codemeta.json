@@ -3,9 +3,9 @@
   "@type": "SoftwareSourceCode",
   "name": "dr_no",
   "description": "CRAB KEY — deterministic radiation/isotope forensics for the Dr. No film: gamma-spectrum isotope identification, Gaussian plume dispersion, and island threat assessment, exposed through the BOND-API mission protocol.",
-  "codeRepository": "local-only (PROJECT BOND working tree)",
+  "codeRepository": "https://github.com/docxology/bond-dr_no",
   "license": "https://spdx.org/licenses/MIT",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "author": [
     {
       "@type": "Person",
