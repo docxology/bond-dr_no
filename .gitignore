@@ -9,3 +9,6 @@ __pycache__/
 
 # Regenerable artifacts — smoke tests write under output/ and must leave git clean
 output/
+
+# Build output the vendored copies' own builds write into vendor/.
+vendor/**/build/

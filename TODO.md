@@ -7,13 +7,15 @@ quantification, Bateman decay projection, shielding attenuation, Gaussian plume
 dispersion, and inhalation dose, to a five-band island threat posture and a
 containment action. It exposes the frozen `bond_api` `MissionProvider` surface
 (slug `dr_no`) and hydrates every manuscript number as a token from one metric
-pass. **Verified state: §Round-2 below** — 345 tests collected, 345 passed, 0
-failed, 0 skipped; `src/` line+branch coverage 100.00% (`uv run pytest tests/
---cov=src --cov-report=term-missing`). Ruff check, ruff format --check, and
-mypy on `src/` + `scripts/` are all clean in the same session, the
-template-lineage scan returns nothing, and
-[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md) carries the last
-measured counts.
+pass. **Verified state: re-measured 2026-11-04 after the `bond-api` vendoring
+round** (§Round-2 below is the prior round's record) — 346 tests collected, 346
+passed, 0 failed, 0 skipped; `src/` line+branch coverage 100.00% (`uv run pytest
+tests/ --cov=src --cov-report=term-missing`). Ruff check, ruff format --check
+(47 files), and mypy on `src/` + `scripts/` (20 files) are all clean in the same
+session, the template-lineage scan returns nothing, `scripts/vendor.py --check`
+reports `vendor/bond-api: ok`, and
+[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md) is that run's output
+from `scripts/z_generate_counts.py`.
 
 This file tracks only what is **not** done. What exists is described in
 [`README.md`](README.md) and [`docs/architecture.md`](docs/architecture.md).

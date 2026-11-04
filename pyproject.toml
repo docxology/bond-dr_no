@@ -32,7 +32,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-bond-api = { path = "../bond-api" }
+bond-api = { path = "vendor/bond-api" }
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
@@ -61,6 +61,8 @@ exclude_lines = [
 ]
 
 [tool.mypy]
+# Vendored copies are a dependency; their bytes are bound by scripts/vendor.py.
+exclude = ["(^|/)vendor/"]
 mypy_path = ["src", "."]
 explicit_package_bases = true
 # Runtime is 3.14; >=3.12 is required to parse numpy 2.x's PEP-695 `type` stubs.
@@ -69,5 +71,7 @@ warn_return_any = true
 files = ["src", "scripts"]
 
 [tool.ruff]
+# The vendored copies are byte-identical to upstream and must stay that way.
+extend-exclude = ["vendor"]
 line-length = 100
 target-version = "py310"

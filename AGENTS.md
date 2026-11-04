@@ -21,9 +21,10 @@ uv sync --extra dev
 ```
 
 `bond-api` is a path dependency (`[tool.uv.sources]` in `pyproject.toml`)
-pointing at the sibling `bond-api` package. Runtime deps: numpy, matplotlib,
-pyyaml, bond-api. Python ≥3.10; the pinned mypy target is 3.12 (numpy 2.x stubs
-use PEP-695 syntax), and the local interpreter is 3.14.
+pointing at the vendored copy in `vendor/bond-api`, byte-checked by
+`scripts/vendor.py --check`. Runtime deps: numpy, matplotlib, pyyaml, bond-api.
+Python ≥3.11 (the `requires-python` floor); the pinned mypy target is 3.12
+(numpy 2.x stubs use PEP-695 syntax), and the local interpreter is 3.14.
 
 ## Test
 
