@@ -7,7 +7,7 @@ verification run; do not hand-edit the numbers here.
 
 ## Test suite
 
-- **Tests passed:** 345
+- **Tests passed:** 346
 - **Coverage (`src/`, line + branch):** 100.00%
 - **Gate:** `uv run pytest tests/ --cov=src --cov-fail-under=90` (>=90% required)
 
