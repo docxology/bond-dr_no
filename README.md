@@ -6,6 +6,30 @@ radiation / isotope forensics · **Version:** 0.3.0
 A PROJECT BOND suite package. Upstream: <https://github.com/docxology/bond-dr_no>
 (default branch `main`). Scope is exactly this directory.
 
+## Mission model
+
+```mermaid
+flowchart TD
+    accTitle: Dr No implemented mission analyses
+    accDescr: Crab Key gamma detector spectrum, parent isotopes, barrier materials and Pasquill-Gifford wind feed Emission-line spectrum synthesis, peak identification, energy calibration and Currie MDA; Bateman parent-daughter decay projection, barrier HVL attenuation and external/internal dose; Steady-state Gaussian plume dispersion, per-facility threat bands and containment posture. The mission adapter returns identified nuclides, activity curves, downwind dose bands and containment posture with provenance, then a debrief.
+    I["Crab Key gamma detector spectrum, parent isotopes, barrier materials and Pasquill-Gifford wind"]
+    G0["Emission-line spectrum synthesis, peak identification, energy calibration and Currie MDA"]
+    I --> G0
+    G1["Bateman parent-daughter decay projection, barrier HVL attenuation and external/internal dose"]
+    I --> G1
+    G2["Steady-state Gaussian plume dispersion, per-facility threat bands and containment posture"]
+    I --> G2
+    O["mission.py: execute returns MissionOutcome<br/>Identified nuclides, activity curves, downwind dose bands, containment and provenance"]
+    G0 --> O
+    G1 --> O
+    G2 --> O
+    O --> F["debrief: mission summary"]
+```
+
+The branches group implemented capabilities; they do not imply a runtime order.
+
+**Source map:** [`scenario.py`](src/dr_no/scenario.py), [`isotope_profiles.py`](src/dr_no/isotope_profiles.py), [`spectrum_processing.py`](src/dr_no/spectrum_processing.py); [`decay_chain.py`](src/dr_no/decay_chain.py), [`shielding.py`](src/dr_no/shielding.py), [`dose_assessment.py`](src/dr_no/dose_assessment.py); [`plume_model.py`](src/dr_no/plume_model.py), [`island_assessment.py`](src/dr_no/island_assessment.py), [`canonical.py`](src/dr_no/canonical.py); [`mission.py`](src/dr_no/mission.py).
+
 ## The film, and what it maps onto
 
 Dr. No's Crab Key is an island whose hidden facility runs on a nuclear reactor,
