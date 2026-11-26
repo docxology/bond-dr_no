@@ -1,5 +1,7 @@
 # docs/ — agent-facing documentation for CRAB KEY (dr_no)
 
+[Package maintenance](package-maintenance.md) identifies the dependency and citation records.
+
 ## Read order
 
 1. [`agent_instructions.md`](agent_instructions.md) — scope, guardrails, and the

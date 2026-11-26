@@ -1,5 +1,7 @@
 # Docs — CRAB KEY (dr_no)
 
+[Package maintenance](package-maintenance.md) covers dependency and release records.
+
 Agent-facing documentation for the Dr. No mission package: radiation and
 isotope forensics, plume dispersion, and Crab Key island threat assessment.
 
