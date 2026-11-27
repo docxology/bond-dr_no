@@ -1,6 +1,7 @@
 # Dr. No — CRAB KEY · PROJECT BOND film package
 
-See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+For the distribution version, checkout Python selection, dependency sources,
+and citation records, see [package maintenance](docs/package-maintenance.md).
 
 **Film:** Dr. No (1962) · **Mission codename:** CRAB KEY · **Discipline:**
 radiation / isotope forensics · **Version:** 0.3.0
