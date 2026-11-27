@@ -1,5 +1,8 @@
 # Dr. No — CRAB KEY · Agent Working Notes
 
+The [package maintenance guide](docs/package-maintenance.md) records the
+distribution identity, Python selection, dependency provenance, and citation metadata.
+
 Build, test, and verify instructions for this PROJECT BOND film package.
 Behavioural rules live in [`docs/agent_instructions.md`](docs/agent_instructions.md);
 the architecture contract in [`docs/architecture.md`](docs/architecture.md); the
